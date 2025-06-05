@@ -51,7 +51,7 @@ setup_directories() {
 download_tier1_models() {
     echo "📦 Pulling Tier 1 models (High-Performance) from Ollama..."
 
-    # Nomic Embed v1.5 for embeddings
+    # Nomic Embed v1.5 for embeddings (used for all tiers)
     if ! ollama list | grep -q "nomic-embed-text"; then
         echo "⬇️  Pulling Nomic Embed v1.5 from Ollama..."
         ollama pull nomic-embed-text
@@ -71,12 +71,12 @@ download_tier1_models() {
 download_tier2_models() {
     echo "📦 Pulling Tier 2 models (Balanced) from Ollama..."
 
-    # mxbai-embed-large for embeddings
-    if ! ollama list | grep -q "mxbai-embed-large"; then
-        echo "⬇️  Pulling MXBai Embed Large from Ollama..."
-        ollama pull mxbai-embed-large
+    # Nomic Embed v1.5 for embeddings (used for all tiers)
+    if ! ollama list | grep -q "nomic-embed-text"; then
+        echo "⬇️  Pulling Nomic Embed v1.5 from Ollama..."
+        ollama pull nomic-embed-text
     else
-        echo "✅ MXBai Embed Large already present in Ollama."
+        echo "✅ Nomic Embed v1.5 already present in Ollama."
     fi
 
     # Mistral for chat
@@ -91,12 +91,12 @@ download_tier2_models() {
 download_tier3_models() {
     echo "📦 Pulling Tier 3 models (Lightweight) from Ollama..."
 
-    # all-minilm for embeddings
-    if ! ollama list | grep -q "all-minilm"; then
-        echo "⬇️  Pulling all-minilm from Ollama..."
-        ollama pull all-minilm
+    # Nomic Embed v1.5 for embeddings (used for all tiers)
+    if ! ollama list | grep -q "nomic-embed-text"; then
+        echo "⬇️  Pulling Nomic Embed v1.5 from Ollama..."
+        ollama pull nomic-embed-text
     else
-        echo "✅ all-minilm already present in Ollama."
+        echo "✅ Nomic Embed v1.5 already present in Ollama."
     fi
 
     # tinyllama for chat
@@ -181,7 +181,7 @@ create_tier1_configs() {
     echo "Debug: Entering create_tier1_configs"
     cd ../configs || { echo "❌ Failed to cd to ../configs"; exit 1; }
     
-    # Embedding server config
+    # Embedding server config (always use nomic-embed-text)
     echo "Debug: Creating embedding-tier1.args"
     cat > embedding-tier1.args << 'EOF'
 -m
@@ -235,11 +235,11 @@ create_tier2_configs() {
     echo "Debug: Entering create_tier2_configs"
     cd ../configs || { echo "❌ Failed to cd to ../configs"; exit 1; }
     
-    # Embedding server config
+    # Embedding server config (always use nomic-embed-text)
     echo "Debug: Creating embedding-tier2.args"
     cat > embedding-tier2.args << 'EOF'
 -m
-../models/mxbai-embed-large-v1.Q4_K_M.gguf
+../models/nomic-embed-text-v1.5.Q4_K_M.gguf
 --port
 8081
 --host
@@ -280,10 +280,10 @@ EOF
 create_tier3_configs() {
     cd ../configs || exit 1
     
-    # Embedding server config
+    # Embedding server config (always use nomic-embed-text)
     cat > embedding-tier3.args << 'EOF'
 -m
-../models/all-MiniLM-L6-v2.Q4_K_M.gguf
+../models/nomic-embed-text-v1.5.Q4_K_M.gguf
 --port
 8081
 --host
