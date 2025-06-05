@@ -1,0 +1,48 @@
+# .snippets — Key code from doc_chat_ai
+
+---
+## Ingest Files (shared logic)
+
+def ingest_files(directory, db_path, model_name, provider/recursive):
+    # Walk directory, load files, chunk by tokens, skip unchanged
+    # Store chunks in SQLite, queue for embedding
+    # Parallel embedding with progress bar
+    ...
+
+---
+## Chat Command (Ollama)
+
+@app.command()
+def chat(...):
+    # Interactive chat loop
+    # Retrieve top-k docs, build context
+    # Call Ollama chat API with function-calling
+    # Render markdown to CLI
+    ...
+
+---
+## Chat Command (OpenAI)
+
+@app.command()
+def chat(...):
+    # Interactive chat loop
+    # Retrieve top-k docs, build context
+    # Call OpenAI chat API with function-calling
+    # Render markdown to CLI
+    ...
+
+---
+## Embedding Retrieval
+
+def get_embedding(text, model, provider=None):
+    # Call Ollama or OpenAI embedding API
+    # Return numpy array
+    ...
+
+---
+## Database Schema
+
+# SQLite tables: documents, embeddings, files
+CREATE TABLE documents (...)
+CREATE TABLE embeddings (...)
+CREATE TABLE files (...)
