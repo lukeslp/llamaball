@@ -3,7 +3,7 @@
 **Project:** Doc Chat AI → Llamaball Package  
 **Version:** 0.1.0  
 **Status:** Active Development  
-**Last Updated:** $(date)
+**Last Updated:** 2025-06-05
 
 ## 🎯 Project Objectives
 
@@ -56,6 +56,9 @@ doc_chat_ai/
 - [x] **Welcome Screen**: Attractive landing page when run without args
 - [x] **Progress Indicators**: Real-time feedback during operations
 - [x] **Error Handling**: Descriptive errors with suggested solutions
+- [x] **Module Execution**: `python -m llamaball` and `llamaball` entry points
+- [x] **Package Installation**: pip-installable with proper entry points
+- [x] **Debug Mode**: Enhanced logging and debug output for troubleshooting
 
 ### 🔍 Document Processing
 - [x] **Smart Ingestion**: Intelligent chunking and embedding generation

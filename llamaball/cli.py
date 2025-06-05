@@ -134,6 +134,9 @@ def ingest_command(
             default=False
         )
     
+    # Parse exclude patterns
+    exclude_patterns = [p.strip() for p in exclude.split(',') if p.strip()] if exclude else []
+    
     # Show what we're about to do
     if not quiet:
         console.print(f"\n[bold]Ingestion Configuration:[/bold]")
@@ -145,8 +148,11 @@ def ingest_command(
         console.print()
     
     try:
-        with console.status("🔍 Processing documents...") if not quiet else typer.Context():
-            core.ingest_files(directory, db, model, provider, recursive)
+        if not quiet:
+            with console.status("🔍 Processing documents..."):
+                core.ingest_files(directory, db, model, provider, recursive, exclude_patterns)
+        else:
+            core.ingest_files(directory, db, model, provider, recursive, exclude_patterns)
         
         if not quiet:
             console.print("[bold green]✅ Ingestion completed successfully![/bold green]")
@@ -156,6 +162,9 @@ def ingest_command(
             
     except Exception as e:
         console.print(f"[bold red]❌ Ingestion failed:[/bold red] {e}")
+        if not quiet:  # Show traceback in non-quiet mode instead of verbose
+            import traceback
+            console.print(f"[dim]{traceback.format_exc()}[/dim]")
         raise typer.Exit(1)
 
 @app.command(name="chat")
@@ -205,6 +214,8 @@ def chat_command(
     
     # Show chat configuration
     if debug:
+        import logging
+        logging.getLogger().setLevel(logging.DEBUG)
         console.print("[bold]Chat Configuration:[/bold]")
         console.print(f"🗄️  Database: [cyan]{db}[/cyan]")
         console.print(f"🔍 Embedding Model: [cyan]{model}[/cyan]")

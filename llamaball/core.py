@@ -124,11 +124,16 @@ def run_bash_command_func(command: str) -> str:
     except Exception as e:
         return f"Error running bash command: {e}"
 
-def ingest_files(directory: str, db_path: str, model_name: str, provider: str, recursive: bool) -> None:
+def ingest_files(directory: str, db_path: str, model_name: str, provider: str, recursive: bool, exclude_patterns: Optional[List[str]] = None) -> None:
     """
     Ingest files with plugin loaders, chunk by token boundaries,
     skip unchanged files, and enqueue embedding tasks.
     """
+    import fnmatch
+    
+    if exclude_patterns is None:
+        exclude_patterns = []
+    
     walker = os.walk(directory) if recursive else [(directory, [], os.listdir(directory))]
     conn = init_db(db_path)
     c = conn.cursor()
@@ -139,6 +144,13 @@ def ingest_files(directory: str, db_path: str, model_name: str, provider: str, r
         for fname in files:
             path = os.path.join(root, fname)
             rel_path = os.path.relpath(path, directory) if recursive else fname
+            
+            # Check exclude patterns
+            if any(fnmatch.fnmatch(rel_path, pattern) or fnmatch.fnmatch(fname, pattern) 
+                   for pattern in exclude_patterns):
+                logger.debug(f"Excluding file: {rel_path}")
+                continue
+            
             ext = os.path.splitext(fname)[1].lower()
             loader = FILE_LOADERS.get(ext)
             if not loader or not os.path.isfile(path):
@@ -239,62 +251,115 @@ def chat(
     """
     if history is None:
         history = []
-    if user_input is not None:
-        history.append({"role": "user", "content": user_input})
+    
+    if user_input is None:
+        raise ValueError("user_input is required")
+    
+    # Search for relevant documents
     docs = search_embeddings(user_input, db, model, topk, provider)
     context = ""
     for fname, content, score in docs:
         context += f"== {fname} (score={score:.4f}) ==\n{content}\n\n"
-    prompt_text = (
-        context +
-        "Question: " + user_input + "\nAnswer:"
-    )
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history + [{"role": "user", "content": prompt_text}]
+    
+    # Build the prompt with context
+    prompt_text = f"""Based on the following context from documents, please answer the question.
+
+Context:
+{context}
+
+Question: {user_input}
+
+Please provide a helpful answer based on the context provided. If the context doesn't contain relevant information, say so clearly."""
+    
+    # Prepare messages for chat
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history.copy() + [{"role": "user", "content": prompt_text}]
+    
+    # Define available tools
     tools = [
         {
-            "name": "run_python_code",
-            "description": "Execute Python code and return the output.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "code": {"type": "string", "description": "Python code to run"}
-                },
-                "required": ["code"]
+            "type": "function",
+            "function": {
+                "name": "run_python_code",
+                "description": "Execute Python code and return the output.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "code": {"type": "string", "description": "Python code to run"}
+                    },
+                    "required": ["code"]
+                }
             }
         },
         {
-            "name": "run_bash_command",
-            "description": "Execute a bash command and return the output.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "command": {"type": "string", "description": "Bash command to run"}
-                },
-                "required": ["command"]
+            "type": "function", 
+            "function": {
+                "name": "run_bash_command",
+                "description": "Execute a bash command and return the output.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "command": {"type": "string", "description": "Bash command to run"}
+                    },
+                    "required": ["command"]
+                }
             }
         }
     ]
-    response = ollama.chat(
-        model=chat_model,
-        messages=messages,
-        tools=tools,
-        stream=False
-    )
-    msg = response["message"] if isinstance(response, dict) and "message" in response else response.message
-    if isinstance(msg, dict) and msg.get("function_call"):
-        fname = msg["function_call"]["name"]
-        args = msg["function_call"]["arguments"]
-        if fname == "run_python_code":
-            tool_result = run_python_code_func(args["code"])
-        else:
-            tool_result = run_bash_command_func(args["command"])
-        followup = ollama.chat(
+    
+    try:
+        response = ollama.chat(
             model=chat_model,
-            messages=messages + [msg, {"role": "function", "name": fname, "content": tool_result}],
+            messages=messages,
+            tools=tools,
             stream=False
         )
-        followup_msg = followup["message"] if isinstance(followup, dict) and "message" in followup else followup.message
-        answer = followup_msg["content"] if isinstance(followup_msg, dict) else followup_msg.content
-    else:
-        answer = msg["content"] if isinstance(msg, dict) else msg.content
-    return render_markdown_to_html(answer) 
+        
+        # Handle response based on ollama API structure  
+        if isinstance(response, dict):
+            msg = response.get("message", {})
+        else:
+            msg = response.message if hasattr(response, "message") else {}
+        
+        # Check for tool calls
+        if isinstance(msg, dict) and msg.get("tool_calls"):
+            tool_calls = msg["tool_calls"]
+            for tool_call in tool_calls:
+                function_name = tool_call["function"]["name"]
+                arguments = tool_call["function"]["arguments"]
+                
+                if function_name == "run_python_code":
+                    tool_result = run_python_code_func(arguments["code"])
+                elif function_name == "run_bash_command":
+                    tool_result = run_bash_command_func(arguments["command"])
+                else:
+                    tool_result = f"Unknown function: {function_name}"
+                
+                # Add tool result to messages and get final response
+                tool_message = {
+                    "role": "tool",
+                    "name": function_name,
+                    "content": tool_result
+                }
+                
+                followup = ollama.chat(
+                    model=chat_model,
+                    messages=messages + [msg, tool_message],
+                    stream=False
+                )
+                
+                if isinstance(followup, dict):
+                    followup_msg = followup.get("message", {})
+                else:
+                    followup_msg = followup.message if hasattr(followup, "message") else {}
+                
+                answer = followup_msg.get("content", "") if isinstance(followup_msg, dict) else getattr(followup_msg, "content", "")
+                break
+        else:
+            # No tool calls, just return the content
+            answer = msg.get("content", "") if isinstance(msg, dict) else getattr(msg, "content", "")
+        
+        return render_markdown_to_html(answer) if answer else "I'm sorry, I couldn't generate a response."
+        
+    except Exception as e:
+        logger.error(f"Error in chat function: {e}")
+        return f"Error generating response: {e}" 
