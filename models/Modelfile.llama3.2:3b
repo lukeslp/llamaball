@@ -20,7 +20,8 @@ questions.
 # Generation parameters – deterministic, long context
 PARAMETER temperature 0.25
 PARAMETER top_p 0.90
-PARAMETER num_ctx 8192          # matches the embedding chunk limit
+# matches the embedding chunk limit
+PARAMETER num_ctx 8192
 PARAMETER repeat_penalty 1.1
 PARAMETER top_k 40
 

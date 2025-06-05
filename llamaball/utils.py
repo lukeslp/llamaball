@@ -1,4 +1,4 @@
- wimport re
+import re
 from markdown_it import MarkdownIt
 
 def render_markdown_to_html(md_text: str) -> str:

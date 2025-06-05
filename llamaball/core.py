@@ -307,12 +307,26 @@ Please provide a helpful answer based on the context provided. If the context do
     ]
     
     try:
+        # Try with tools first
         response = ollama.chat(
             model=chat_model,
             messages=messages,
             tools=tools,
             stream=False
         )
+    except Exception as e:
+        if "does not support tools" in str(e):
+            # Fallback to chat without tools
+            logger.info(f"Model {chat_model} doesn't support tools, falling back to simple chat")
+            response = ollama.chat(
+                model=chat_model,
+                messages=messages,
+                stream=False
+            )
+        else:
+            raise e
+    
+    try:
         
         # Handle response based on ollama API structure  
         if isinstance(response, dict):
