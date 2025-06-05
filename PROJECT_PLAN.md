@@ -64,8 +64,10 @@ doc_chat_ai/
 - [x] **Smart Ingestion**: Intelligent chunking and embedding generation
 - [x] **File Type Support**: .txt, .md, .py, .json, .csv files
 - [x] **Recursive Scanning**: Optional subdirectory processing
-- [x] **Pattern Exclusion**: Configurable file filtering
+- [x] **Pattern Exclusion**: Configurable file filtering with fnmatch patterns
 - [x] **Force Re-indexing**: Option to rebuild entire database
+- [x] **Parallel Processing**: Multi-threaded embedding generation
+- [x] **Skip Unchanged**: Efficient incremental updates based on mtime
 
 ### 💬 Chat System
 - [x] **Interactive Chat**: Real-time conversation with documents
@@ -73,6 +75,9 @@ doc_chat_ai/
 - [x] **Chat Commands**: help, stats, clear, exit commands
 - [x] **Session Management**: Conversation history and state
 - [x] **Configurable Models**: Support for different chat models
+- [x] **Tool Calling**: Python code execution and bash command support
+- [x] **Markdown Rendering**: HTML output formatted for terminal display
+- [x] **Error Recovery**: Graceful handling of model failures with fallbacks
 
 ### 📊 Database Management
 - [x] **Statistics Dashboard**: Document counts, file types, sizes
@@ -98,6 +103,28 @@ doc_chat_ai/
 - [x] **Qwen3 Series**: 0.6B, 1.7B, and 4B variants
 - [x] **Standardized Embedding**: nomic-embed-text across all configs
 - [x] **Template Optimization**: Consistent prompt formatting
+
+## 🔧 Recent Updates (2025-06-05)
+
+### CLI Package Debugging & Fixes
+- **Fixed Module Execution**: Added `__main__.py` to enable `python -m llamaball`
+- **Package Initialization**: Added proper `__init__.py` with version and API exports
+- **Entry Points**: Verified console script installation and functionality
+- **Error Handling**: Improved exception handling in CLI commands
+- **Exclude Patterns**: Implemented fnmatch-based file exclusion in ingest
+- **Status Context**: Fixed progress indicator context manager usage
+- **Chat Response Parsing**: Enhanced Ollama API response handling for consistency
+- **Debug Logging**: Added comprehensive debug mode for troubleshooting
+- **API Compatibility**: Updated tool calling format for latest Ollama API
+
+### Verified Functionality
+- ✅ `llamaball --help` - Main CLI help and welcome screen
+- ✅ `llamaball version` - Version information display
+- ✅ `llamaball stats` - Database statistics with proper formatting
+- ✅ `llamaball ingest test/ --exclude "*.tmp,*.log"` - File ingestion with patterns
+- ✅ `llamaball chat --debug` - Interactive chat with context retrieval
+- ✅ Package imports: `import llamaball` works correctly
+- ✅ Module execution: Both `python -m llamaball` and `llamaball` work
 
 ## 🚧 Outstanding Tasks
 
