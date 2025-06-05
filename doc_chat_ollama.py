@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
 """
-Document Chat CLI
+Document Chat CLI (Ollama Version)
 
-Ingests all files in a directory (optionally recursively), chunks each into segments up to MAX_CHUNK_SIZE (2000 characters),
-creates a SQLite DB storing contents and embeddings,
-and allows interactive chat with the ingested documents.
+File Purpose: Ingests files, builds embeddings, and enables interactive chat using Ollama LLMs.
+Primary Functions/Classes:
+  - ingest_files: Loads and chunks files, stores embeddings in SQLite
+  - search_embeddings: Finds top-k similar documents using vector search
+  - chat: Interactive CLI chat with function/tool support (Ollama API)
+Inputs:
+  - Directory of files, chat prompts, CLI options
+Outputs:
+  - Embedding database, chat responses
 
-Requirements:
-  - ollama (pip install ollama)
-  - numpy
+Ollama API Compatibility:
+  - This version expects Ollama's API response format (top-level 'message' key, not 'choices').
+  - See README for integration and troubleshooting.
 
-Usage:
-  python doc_chat.py ingest --dir PATH [--db PATH] [--model MODEL_NAME]
-  python doc_chat.py chat   [--db PATH] [--model MODEL_NAME] [--topk N]
+Accessibility: CLI is screen-reader friendly; all outputs are plain text or Markdown.
 """
 import os
 import sys
@@ -83,7 +87,7 @@ def render_markdown_to_html(md_text: str) -> str:
     return html.strip()
 
 DEFAULT_DB_PATH = ".clai.db"
-DEFAULT_MODEL_NAME = "nomic-embed-text"  # Ollama embedding model
+DEFAULT_MODEL_NAME = "nomic-embed-text:latest"  # Ollama embedding model
 DEFAULT_PROVIDER = "ollama"
 # Default chat model for OpenAI or Ollama
 DEFAULT_CHAT_MODEL = os.environ.get("CHAT_MODEL", "llama3.2:1b")
@@ -229,7 +233,8 @@ def ingest_files(directory: str, db_path: str, model_name: str, provider: str, r
             paragraphs = re.split(r'\n\s*\n', content)
             token_buffer = []
             for para in paragraphs:
-                para_tokens = encoder.encode(para)
+                # Allow all special tokens to avoid ValueError during encoding
+                para_tokens = encoder.encode(para, disallowed_special=())
                 if len(token_buffer) + len(para_tokens) > MAX_TOKENS:
                     # flush buffer
                     text_chunk = encoder.decode(token_buffer)
@@ -312,7 +317,8 @@ def search_embeddings(query: str,
     scores = []
     for doc_id, emb_blob in c.fetchall():
         emb = np.frombuffer(emb_blob, dtype=np.float32)
-        sim = float(np.dot(query_emb, emb) / (norm(query_emb) * norm(emb)))
+        sim = np.dot(query_emb, emb) / (norm(query_emb) * norm(emb))
+        sim = sim.item() if hasattr(sim, "item") else float(sim)
         scores.append((doc_id, sim))
     conn.close()
 
@@ -399,13 +405,13 @@ def chat(
                 model=chat_model,
                 messages=messages,
                 tools=tools,
-                temperature=0.2,
                 stream=False
             )
-            msg = response.choices[0].message
-            if msg.get("function_call"):
-                fname = msg.function_call.name
-                args = msg.function_call.arguments
+            # Ollama returns a dict with a top-level 'message' key
+            msg = response["message"] if isinstance(response, dict) and "message" in response else response.message
+            if isinstance(msg, dict) and msg.get("function_call"):
+                fname = msg["function_call"]["name"]
+                args = msg["function_call"]["arguments"]
                 if fname == "run_python_code":
                     tool_result = run_python_code_func(args["code"])
                 else:
@@ -414,12 +420,12 @@ def chat(
                 followup = ollama.chat(
                     model=chat_model,
                     messages=messages + [msg, {"role": "function", "name": fname, "content": tool_result}],
-                    temperature=0.2,
                     stream=False
                 )
-                answer = followup.choices[0].message.content
+                followup_msg = followup["message"] if isinstance(followup, dict) and "message" in followup else followup.message
+                answer = followup_msg["content"] if isinstance(followup_msg, dict) else followup_msg.content
             else:
-                answer = msg.content
+                answer = msg["content"] if isinstance(msg, dict) else msg.content
             html_response = render_markdown_to_html(answer)
             print_formatted_text(HTML(f"<ans>Assistant:</ans>\n{html_response}\n"), style=CLI_STYLE)
         except Exception as e:
