@@ -14,6 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import List, Tuple, Optional
 from .utils import render_markdown_to_html
 import re
+import requests
 
 # Logging setup
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -237,6 +238,53 @@ def search_embeddings(query: str, db_path: str, model_name: str, top_k: int, pro
     conn.close()
     return results
 
+def get_available_models(fallback_custom: Optional[str] = None) -> List[dict]:
+    """
+    Fetch available Ollama models using the /tags endpoint.
+    Returns a list of model dictionaries with name, size, and other details.
+    If the API call fails, returns the fallback_custom model if provided.
+    """
+    try:
+        # Try to get models from Ollama API
+        response = requests.get("http://127.0.0.1:11434/api/tags", timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            models = []
+            for model in data.get("models", []):
+                models.append({
+                    "name": model["name"],
+                    "size": model.get("size", 0),
+                    "modified_at": model.get("modified_at", ""),
+                    "digest": model.get("digest", ""),
+                    "details": model.get("details", {})
+                })
+            return models
+        else:
+            logger.warning(f"Failed to fetch models from Ollama API: {response.status_code}")
+    except Exception as e:
+        logger.warning(f"Error fetching models from Ollama API: {e}")
+    
+    # Fallback to custom model if provided
+    if fallback_custom:
+        return [{"name": fallback_custom, "size": 0, "modified_at": "", "digest": "", "details": {}}]
+    
+    # Default fallback models
+    return [
+        {"name": "llama3.2:1b", "size": 0, "modified_at": "", "digest": "", "details": {}},
+        {"name": "llama3.2:3b", "size": 0, "modified_at": "", "digest": "", "details": {}},
+    ]
+
+def format_model_size(size_bytes: int) -> str:
+    """Format model size in human-readable format"""
+    if size_bytes == 0:
+        return "Unknown"
+    
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if size_bytes < 1024.0:
+            return f"{size_bytes:.1f} {unit}"
+        size_bytes /= 1024.0
+    return f"{size_bytes:.1f} PB"
+
 def chat(
     db: str = DEFAULT_DB_PATH,
     model: str = DEFAULT_MODEL_NAME,
@@ -244,7 +292,12 @@ def chat(
     chat_model: str = DEFAULT_CHAT_MODEL,
     topk: int = 3,
     user_input: Optional[str] = None,
-    history: Optional[list] = None
+    history: Optional[list] = None,
+    temperature: float = 0.7,
+    max_tokens: int = 512,
+    top_p: float = 0.9,
+    top_k: int = 40,
+    repeat_penalty: float = 1.1
 ) -> str:
     """
     Run a chat session or single chat turn. Returns the assistant's response as Markdown.
@@ -306,12 +359,22 @@ Please provide a helpful answer based on the context provided. If the context do
         }
     ]
     
+    # Prepare model options
+    options = {
+        "temperature": temperature,
+        "num_predict": max_tokens,
+        "top_p": top_p,
+        "top_k": top_k,
+        "repeat_penalty": repeat_penalty
+    }
+    
     try:
         # Try with tools first
         response = ollama.chat(
             model=chat_model,
             messages=messages,
             tools=tools,
+            options=options,
             stream=False
         )
     except Exception as e:
@@ -321,13 +384,13 @@ Please provide a helpful answer based on the context provided. If the context do
             response = ollama.chat(
                 model=chat_model,
                 messages=messages,
+                options=options,
                 stream=False
             )
         else:
             raise e
     
     try:
-        
         # Handle response based on ollama API structure  
         if isinstance(response, dict):
             msg = response.get("message", {})
@@ -358,6 +421,7 @@ Please provide a helpful answer based on the context provided. If the context do
                 followup = ollama.chat(
                     model=chat_model,
                     messages=messages + [msg, tool_message],
+                    options=options,
                     stream=False
                 )
                 

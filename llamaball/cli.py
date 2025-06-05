@@ -176,7 +176,11 @@ def chat_command(
     topk: int = typer.Option(3, "--top-k", "-k", help="Number of relevant documents to retrieve"),
     temperature: float = typer.Option(0.7, "--temperature", "-t", help="Chat model temperature (0.0-2.0)"),
     max_tokens: int = typer.Option(512, "--max-tokens", "-T", help="Maximum tokens in response"),
+    top_p: float = typer.Option(0.9, "--top-p", help="Top-P nucleus sampling (0.0-1.0)"),
+    top_k: int = typer.Option(40, "--top-k-sampling", help="Top-K sampling parameter"),
+    repeat_penalty: float = typer.Option(1.1, "--repeat-penalty", help="Repetition penalty (0.0-2.0)"),
     system_prompt: Optional[str] = typer.Option(None, "--system", "-s", help="Custom system prompt"),
+    list_models: bool = typer.Option(False, "--list-models", "-l", help="List available models and exit"),
     debug: bool = typer.Option(False, "--debug", help="Show debug information")
 ):
     """
@@ -200,11 +204,19 @@ def chat_command(
     • 'clear' - Clear conversation history
     
     Examples:
+      llamaball chat --list-models             # List available models
       llamaball chat                           # Basic chat
-      llamaball chat -c qwen3:4b               # Use specific chat model
+      llamaball chat -c llamaball-qwen3:4b     # Use specific chat model
       llamaball chat --top-k 5 --temp 0.3     # More documents, lower temperature
       llamaball chat --system "Be concise"    # Custom system prompt
+      llamaball chat --top-p 0.8 --repeat-penalty 1.2  # Advanced parameters
     """
+    
+    # Handle list models option
+    if list_models:
+        console.print("[bold]🤖 Available Chat Models:[/bold]\n")
+        list_available_models()
+        return
     # Check if database exists
     db_path = Path(db)
     if not db_path.exists():
@@ -243,7 +255,8 @@ def chat_command(
     console.print(welcome_panel)
     
     # Start interactive chat
-    start_interactive_chat(db, model, provider, chat_model, topk, system_prompt, debug)
+    start_interactive_chat(db, model, provider, chat_model, topk, system_prompt, debug, 
+                          temperature, max_tokens, top_p, top_k, repeat_penalty)
 
 @app.command(name="stats")
 def stats_command(
@@ -490,7 +503,9 @@ def display_files_table(files_info: list):
     console.print(table)
 
 def start_interactive_chat(db: str, model: str, provider: str, chat_model: str, topk: int, 
-                          system_prompt: Optional[str] = None, debug: bool = False):
+                          system_prompt: Optional[str] = None, debug: bool = False,
+                          temperature: float = 0.7, max_tokens: int = 512, top_p: float = 0.9,
+                          top_k: int = 40, repeat_penalty: float = 1.1):
     """Start the interactive chat session"""
     from prompt_toolkit import PromptSession
     from prompt_toolkit.formatted_text import HTML
@@ -504,15 +519,19 @@ def start_interactive_chat(db: str, model: str, provider: str, chat_model: str, 
         "u": "underline ansiyellow"
     })
     
-    session = PromptSession(style=CLI_STYLE)
-    history = []
+    prompt_session = PromptSession(style=CLI_STYLE)
+    chat_session = ChatSession(db, model, provider, chat_model, topk, system_prompt)
     
-    if system_prompt:
-        history.append({"role": "system", "content": system_prompt})
+    # Set initial parameters from CLI
+    chat_session.temperature = temperature
+    chat_session.max_tokens = max_tokens
+    chat_session.top_p = top_p
+    chat_session.top_k = top_k
+    chat_session.repeat_penalty = repeat_penalty
     
     while True:
         try:
-            user_input = session.prompt(HTML("<b>🤔 You:</b> "), style=CLI_STYLE)
+            user_input = prompt_session.prompt(HTML("<b>🤔 You:</b> "), style=CLI_STYLE)
             
             if user_input.lower() in ("exit", "quit", "q"):
                 console.print("[dim]👋 Goodbye![/dim]")
@@ -525,20 +544,38 @@ def start_interactive_chat(db: str, model: str, provider: str, chat_model: str, 
                 console.print(f"📊 {stats_info['docs']} docs, {stats_info['embeddings']} embeddings")
                 continue
             elif user_input.lower() == "clear":
-                history = []
-                if system_prompt:
-                    history.append({"role": "system", "content": system_prompt})
+                chat_session.reset_history()
                 console.print("[dim]🧹 Conversation history cleared[/dim]")
                 continue
             elif not user_input.strip():
                 continue
             
+            # Check for chat commands (model switching, parameter changes, etc.)
+            command_result = handle_chat_command(user_input, chat_session)
+            if command_result is not None:
+                # It was a command, display the result
+                console.print(f"[cyan]🔧 System:[/cyan]\n{command_result}\n")
+                continue
+            
             # Show thinking indicator
             with console.status("🤖 Thinking...") as status:
                 try:
-                    response = core.chat(db, model, provider, chat_model, topk, user_input, history.copy())
-                    history.append({"role": "user", "content": user_input})
-                    history.append({"role": "assistant", "content": response})
+                    response = core.chat(
+                        db=chat_session.db, 
+                        model=chat_session.model, 
+                        provider=chat_session.provider, 
+                        chat_model=chat_session.chat_model, 
+                        topk=chat_session.topk, 
+                        user_input=user_input, 
+                        history=chat_session.history.copy(),
+                        temperature=chat_session.temperature,
+                        max_tokens=chat_session.max_tokens,
+                        top_p=chat_session.top_p,
+                        top_k=chat_session.top_k,
+                        repeat_penalty=chat_session.repeat_penalty
+                    )
+                    chat_session.history.append({"role": "user", "content": user_input})
+                    chat_session.history.append({"role": "assistant", "content": response})
                 except Exception as e:
                     console.print(f"[bold red]❌ Error:[/bold red] {e}")
                     if debug:
@@ -561,23 +598,211 @@ def show_chat_help():
     help_text = """
 [bold]💬 Chat Session Help[/bold]
 
-[bold]Commands:[/bold]
+[bold]Basic Commands:[/bold]
 • [cyan]exit, quit, q[/cyan] - End the chat session
 • [cyan]help[/cyan] - Show this help message
 • [cyan]stats[/cyan] - Show database statistics
 • [cyan]clear[/cyan] - Clear conversation history
+
+[bold]Model & Parameter Commands:[/bold]
+• [cyan]/models[/cyan] - List available models
+• [cyan]/model [name][/cyan] - Switch to a different model
+• [cyan]/temp [0.0-2.0][/cyan] - Change response creativity
+• [cyan]/tokens [1-8192][/cyan] - Change max response length
+• [cyan]/topk [1-20][/cyan] - Change document retrieval count
+• [cyan]/status[/cyan] - Show current settings
+• [cyan]/commands[/cyan] - Show all available commands
 
 [bold]Tips:[/bold]
 • Ask specific questions about your documents
 • Use natural language - no special syntax needed
 • Reference specific files or topics for better results
 • The assistant can execute code and run commands if needed
+• Change models on-the-fly with [cyan]/model[/cyan] command
+• Adjust creativity with [cyan]/temp[/cyan] (0.0=focused, 1.0=creative)
 
 [bold]Shortcuts:[/bold]
 • [cyan]Ctrl+C[/cyan] - End session
 • [cyan]Ctrl+D[/cyan] - End session (Unix/Mac)
 """
     console.print(Panel(help_text, title="Chat Help", border_style="blue"))
+
+class ChatSession:
+    """Manages chat session state including model selection and parameters"""
+    
+    def __init__(self, db, model, provider, chat_model, topk, system_prompt=None):
+        self.db = db
+        self.model = model
+        self.provider = provider
+        self.chat_model = chat_model
+        self.topk = topk
+        self.system_prompt = system_prompt
+        self.history = []
+        self.temperature = 0.7
+        self.max_tokens = 512
+        self.top_p = 0.9
+        self.top_k = 40
+        self.repeat_penalty = 1.1
+        
+        if system_prompt:
+            self.history.append({"role": "system", "content": system_prompt})
+    
+    def reset_history(self):
+        """Reset conversation history"""
+        self.history = []
+        if self.system_prompt:
+            self.history.append({"role": "system", "content": self.system_prompt})
+    
+    def get_status(self):
+        """Get current session configuration as a formatted string"""
+        return f"""🤖 Current Settings:
+• Model: {self.chat_model}
+• Temperature: {self.temperature}
+• Max Tokens: {self.max_tokens}
+• Top-K Retrieval: {self.topk}
+• Top-P: {self.top_p}
+• Top-K Sampling: {self.top_k}
+• Repeat Penalty: {self.repeat_penalty}"""
+
+def list_available_models(custom_model=None):
+    """List available models with size information"""
+    from rich.table import Table
+    from llamaball.core import get_available_models, format_model_size
+    
+    models = get_available_models(custom_model)
+    
+    if not models:
+        console.print("[yellow]No models found[/yellow]")
+        return
+    
+    table = Table(title="🤖 Available Models", show_header=True, header_style="bold magenta")
+    table.add_column("Model Name", style="cyan")
+    table.add_column("Size", style="green")
+    table.add_column("Family", style="blue")
+    table.add_column("Parameters", style="yellow")
+    
+    for model in models:
+        details = model.get("details", {})
+        family = details.get("family", "unknown")
+        param_size = details.get("parameter_size", "unknown")
+        size_str = format_model_size(model["size"])
+        
+        table.add_row(
+            model["name"],
+            size_str,
+            family,
+            param_size
+        )
+    
+    console.print(table)
+    return models
+
+def handle_chat_command(user_input: str, session: ChatSession) -> str:
+    """
+    Handle special chat commands for changing settings.
+    Returns None if it's a regular chat message, or a response string for commands.
+    """
+    user_input = user_input.strip()
+    
+    if user_input.startswith("/"):
+        parts = user_input[1:].split()
+        command = parts[0].lower() if parts else ""
+        
+        if command == "models":
+            # List available models
+            custom_model = parts[1] if len(parts) > 1 else None
+            list_available_models(custom_model)
+            return "Listed available models above"
+            
+        elif command == "model" and len(parts) > 1:
+            # Change model: /model llamaball-qwen3:0.6b
+            new_model = parts[1]
+            session.chat_model = new_model
+            return f"✅ Changed chat model to: {new_model}"
+            
+        elif command == "temp" and len(parts) > 1:
+            # Change temperature: /temp 0.8
+            try:
+                new_temp = float(parts[1])
+                if 0.0 <= new_temp <= 2.0:
+                    session.temperature = new_temp
+                    return f"✅ Changed temperature to: {new_temp}"
+                else:
+                    return "❌ Temperature must be between 0.0 and 2.0"
+            except ValueError:
+                return "❌ Invalid temperature value. Use a number between 0.0 and 2.0"
+                
+        elif command == "tokens" and len(parts) > 1:
+            # Change max tokens: /tokens 1024
+            try:
+                new_tokens = int(parts[1])
+                if 1 <= new_tokens <= 8192:
+                    session.max_tokens = new_tokens
+                    return f"✅ Changed max tokens to: {new_tokens}"
+                else:
+                    return "❌ Max tokens must be between 1 and 8192"
+            except ValueError:
+                return "❌ Invalid token value. Use a whole number between 1 and 8192"
+                
+        elif command == "topk" and len(parts) > 1:
+            # Change top-k retrieval: /topk 5
+            try:
+                new_topk = int(parts[1])
+                if 1 <= new_topk <= 20:
+                    session.topk = new_topk
+                    return f"✅ Changed top-K retrieval to: {new_topk}"
+                else:
+                    return "❌ Top-K must be between 1 and 20"
+            except ValueError:
+                return "❌ Invalid top-K value. Use a whole number between 1 and 20"
+                
+        elif command == "topp" and len(parts) > 1:
+            # Change top-p: /topp 0.9
+            try:
+                new_topp = float(parts[1])
+                if 0.0 <= new_topp <= 1.0:
+                    session.top_p = new_topp
+                    return f"✅ Changed top-P to: {new_topp}"
+                else:
+                    return "❌ Top-P must be between 0.0 and 1.0"
+            except ValueError:
+                return "❌ Invalid top-P value. Use a number between 0.0 and 1.0"
+                
+        elif command == "penalty" and len(parts) > 1:
+            # Change repeat penalty: /penalty 1.1
+            try:
+                new_penalty = float(parts[1])
+                if 0.0 <= new_penalty <= 2.0:
+                    session.repeat_penalty = new_penalty
+                    return f"✅ Changed repeat penalty to: {new_penalty}"
+                else:
+                    return "❌ Repeat penalty must be between 0.0 and 2.0"
+            except ValueError:
+                return "❌ Invalid repeat penalty value. Use a number between 0.0 and 2.0"
+                
+        elif command == "status":
+            # Show current settings
+            return session.get_status()
+            
+        elif command == "commands":
+            # Show available commands
+            return """🔧 Available Commands:
+• /models [custom_model] - List available models
+• /model [name] - Change chat model
+• /temp [0.0-2.0] - Change temperature
+• /tokens [1-8192] - Change max tokens
+• /topk [1-20] - Change document retrieval count
+• /topp [0.0-1.0] - Change top-P sampling
+• /penalty [0.0-2.0] - Change repeat penalty
+• /status - Show current settings
+• /commands - Show this help
+• help, stats, clear, exit, quit - Standard commands"""
+        
+        else:
+            return f"❌ Unknown command: /{command}. Type '/commands' for help."
+    
+    # Not a command, return None to indicate regular chat
+    return None
 
 def main():
     """Main entry point"""

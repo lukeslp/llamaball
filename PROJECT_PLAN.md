@@ -117,6 +117,26 @@ doc_chat_ai/
 - **Debug Logging**: Added comprehensive debug mode for troubleshooting
 - **API Compatibility**: Updated tool calling format for latest Ollama API
 
+### Dynamic Model & Parameter Control
+- **Model Discovery**: Added `/api/tags` endpoint integration to fetch available Ollama models
+- **Live Model Switching**: Implemented `/model <name>` command for chat session model changes
+- **Parameter Adjustment**: Added commands for temperature, max tokens, top-p, top-k, repeat penalty
+- **Session State Management**: Created `ChatSession` class to track conversation and settings
+- **Rich Model Display**: Added formatted table showing model names, sizes, families, and parameters
+- **Real-time Configuration**: All model parameters can be changed mid-conversation
+- **Status Monitoring**: Added `/status` command to view current model and parameter settings
+
+### New Chat Commands
+- ✅ `/models` - List all available Ollama models with details
+- ✅ `/model <name>` - Switch to a different chat model instantly  
+- ✅ `/temp <0.0-2.0>` - Adjust response creativity/randomness
+- ✅ `/tokens <1-8192>` - Change maximum response length
+- ✅ `/topk <1-20>` - Modify document retrieval count
+- ✅ `/topp <0.0-1.0>` - Adjust nucleus sampling parameter
+- ✅ `/penalty <0.0-2.0>` - Change repetition penalty
+- ✅ `/status` - Display current model and parameter configuration
+- ✅ `/commands` - Show all available chat commands
+
 ### Verified Functionality
 - ✅ `llamaball --help` - Main CLI help and welcome screen
 - ✅ `llamaball version` - Version information display
@@ -125,6 +145,9 @@ doc_chat_ai/
 - ✅ `llamaball chat --debug` - Interactive chat with context retrieval
 - ✅ Package imports: `import llamaball` works correctly
 - ✅ Module execution: Both `python -m llamaball` and `llamaball` work
+- ✅ **Dynamic Model Control** - Change models and parameters during chat
+- ✅ **Model Listing** - View all available models with size/parameter info
+- ✅ **Parameter Tuning** - Real-time adjustment of generation parameters
 
 ## 🚧 Outstanding Tasks
 
