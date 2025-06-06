@@ -1,49 +1,14 @@
-# 🦙 Doc Chat AI (Llamaball)
+# 🦙 Llamaball
 
 **Accessible document chat and RAG system powered by Ollama**
 
+[![PyPI version](https://badge.fury.io/py/llamaball.svg)](https://badge.fury.io/py/llamaball)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A comprehensive toolkit for document ingestion, embedding generation, and conversational AI interactions with your local documents. Built with accessibility and local privacy as core principles.
 
-## 🚀 Quick Start with Llamaball
-
-**The project has been packaged as `llamaball` - an installable CLI and Python library:**
-
-```bash
-# Install the package
-pip install -e .
-
-# Ingest documents
-llamaball ingest .
-
-# Start chatting
-llamaball chat
-```
-
-## 📦 What's Included
-
-### 🦙 Llamaball Package (`llamaball/`)
-- **Interactive CLI** with rich formatting and accessibility features
-- **Python API** for programmatic use
-- **Comprehensive documentation** with all flags and examples
-- **Screen reader friendly** output and navigation
-
-### 🛠️ Setup Scripts
-- `quick-setup.sh` - Automated model downloads and configuration
-- `start-rag-system.sh` - System startup
-- `stop-rag-system.sh` - Clean shutdown
-- `test-rag-system.sh` - Integration testing
-
-### 📋 Model Configurations (`models/`)
-- `Modelfile.gemma3:1b` - Gemma 3 1B configuration
-- `Modelfile.qwen3:0.6b` - Qwen3 0.6B configuration  
-- `Modelfile.qwen3:1.7b` - Qwen3 1.7B configuration
-- `Modelfile.qwen3:4b` - Qwen3 4B configuration
-
-### 🐍 Legacy Scripts (Transitioning)
-- `doc_chat_ollama.py` - Original Ollama implementation (now in `llamaball.core`)
-- `doc_chat_openai.py` - OpenAI implementation
-
-## 🎯 Features
+## ✨ Features
 
 - **🏠 100% Local Processing**: All data stays on your machine
 - **♿ Accessibility First**: Screen reader support, keyboard navigation, clear structure
@@ -52,59 +17,146 @@ llamaball chat
 - **🔍 Semantic Search**: Fast vector similarity search
 - **💬 Interactive Chat**: Natural conversations with your documents
 - **📊 Database Management**: Comprehensive statistics and file management
+- **🎛️ Dynamic Model Control**: Change models and parameters during chat
+- **🔧 Developer-Friendly**: Full Python API with type hints
+
+## 🚀 Quick Start
+
+### Installation
+
+```bash
+# Install from PyPI
+pip install llamaball
+
+# Or install with development dependencies
+pip install llamaball[dev]
+```
+
+### Prerequisites
+
+Llamaball requires [Ollama](https://ollama.ai/) to be installed and running:
+
+1. Install Ollama from [ollama.ai](https://ollama.ai/)
+2. Pull some models:
+   ```bash
+   ollama pull llama3.2:1b
+   ollama pull nomic-embed-text
+   ```
+
+### Basic Usage
+
+```bash
+# Ingest documents from current directory
+llamaball ingest .
+
+# Start interactive chat
+llamaball chat
+
+# View statistics
+llamaball stats
+
+# List all files in database
+llamaball list
+
+# Get help
+llamaball --help
+```
 
 ## 📋 CLI Commands
 
-See the complete documentation in `llamaball/README.md` or run:
+### Document Management
 
 ```bash
-llamaball --help              # Main help
-llamaball ingest --help       # Ingestion options
-llamaball chat --help         # Chat configuration
-llamaball stats --help        # Database statistics
+# Ingest files with options
+llamaball ingest ./docs --recursive --exclude "*.tmp,*.log"
+
+# Force re-indexing
+llamaball ingest ./docs --force
+
+# View database statistics
+llamaball stats --format table
+
+# List files with search
+llamaball list --search "python" --sort-by size
 ```
 
-## 🔧 Development Setup
+### Interactive Chat
 
 ```bash
-# Clone and install
-git clone <repository>
-cd doc_chat_ai
-pip install -e .
+# Start chat with specific model
+llamaball chat --model llama3.2:3b
 
-# Run setup (optional - for Ollama models)
-./quick-setup.sh
+# Set parameters from CLI
+llamaball chat --temperature 0.1 --max-tokens 200
 
-# Start using llamaball
-llamaball ingest .
-llamaball chat
+# Enable debug mode
+llamaball chat --debug
 ```
 
-## 🐍 Python API Usage
+### Model Management
+
+```bash
+# List available models
+llamaball models
+
+# Show specific model details
+llamaball models llama3.2:1b
+
+# List models in JSON format
+llamaball models --format json
+```
+
+## 💬 Interactive Chat Commands
+
+Once in chat mode, use these commands:
+
+- `/models` - List all available Ollama models
+- `/model <name>` - Switch to a different chat model
+- `/temp <0.0-2.0>` - Adjust response creativity
+- `/tokens <1-8192>` - Change maximum response length
+- `/topk <1-20>` - Modify document retrieval count
+- `/status` - Display current configuration
+- `/help` - Show all chat commands
+- `/exit` - Exit chat mode
+
+## 🐍 Python API
 
 ```python
 from llamaball import core
 
 # Ingest documents
-core.ingest_files("./docs", recursive=True)
+core.ingest_files("./docs", recursive=True, exclude_patterns=["*.tmp"])
 
 # Search embeddings  
 results = core.search_embeddings(query="search term", top_k=5)
 
 # Chat with documents
-response = core.chat(user_input="What is this about?", history=[])
+response = core.chat(
+    user_input="What is this about?", 
+    history=[],
+    model="llama3.2:1b"
+)
+
+# Get database statistics
+stats = core.get_stats()
+print(f"Total documents: {stats['total_files']}")
 ```
 
-## 🎛️ Configuration
+## ⚙️ Configuration
 
 ### Environment Variables
+
 - `CHAT_MODEL`: Default chat model (default: `llama3.2:1b`)
-- `OLLAMA_ENDPOINT`: Ollama server endpoint
+- `OLLAMA_ENDPOINT`: Ollama server endpoint (default: `http://localhost:11434`)
+- `LLAMABALL_DB`: Database path (default: `.clai.db`)
+- `LLAMABALL_LOG_LEVEL`: Logging level (default: `INFO`)
 
 ### Supported File Types
-- Text: `.txt`, `.md`
-- Code: `.py`, `.js`, `.html`, `.css`  
-- Data: `.json`, `.csv`
+
+- **Text**: `.txt`, `.md`, `.rst`
+- **Code**: `.py`, `.js`, `.html`, `.css`, `.json`
+- **Data**: `.csv`, `.tsv`
+- **Documents**: `.pdf` (planned)
 
 ## ♿ Accessibility Features
 
@@ -115,31 +167,96 @@ response = core.chat(user_input="What is this about?", history=[])
 - **Progress Indicators**: Real-time feedback during operations
 - **Consistent Layout**: Predictable command structure
 
+## 🧪 Development
+
+### Setup
+
+```bash
+# Clone repository
+git clone https://github.com/lsteuber/llamaball.git
+cd llamaball
+
+# Install in development mode
+pip install -e .[dev]
+
+# Install pre-commit hooks
+pre-commit install
+```
+
+### Testing
+
+```bash
+# Run tests
+pytest
+
+# Run with coverage
+pytest --cov=llamaball --cov-report=html
+
+# Type checking
+mypy llamaball/
+
+# Code formatting
+black llamaball/
+isort llamaball/
+```
+
+### Building
+
+```bash
+# Build package
+python -m build
+
+# Upload to PyPI (maintainers only)
+python -m twine upload dist/*
+```
+
 ## 📁 Project Structure
 
 ```
-doc_chat_ai/
+llamaball/
 ├── llamaball/              # Main package
-│   ├── __init__.py
-│   ├── cli.py             # CLI interface  
-│   ├── core.py            # Core functionality
-│   ├── utils.py           # Utilities
-│   └── README.md          # Package documentation
-├── models/                # Model configurations
-├── configs/               # Configuration files
-├── scripts/               # Utility scripts
-├── setup.py               # Package installation
-└── README.md              # This file
+│   ├── __init__.py         # Package initialization
+│   ├── cli.py              # CLI interface  
+│   ├── core.py             # Core RAG functionality
+│   ├── utils.py            # Utilities and helpers
+│   └── __main__.py         # Module execution support
+├── models/                 # Ollama model configurations
+│   ├── Modelfile.gemma3:1b
+│   ├── Modelfile.qwen3:*   # Various Qwen3 configurations
+│   └── README_LLAMAFILE_RAG.md
+├── tests/                  # Test suite
+├── docs/                   # Documentation (planned)
+├── pyproject.toml          # Modern Python packaging
+├── CHANGELOG.md            # Version history
+└── README.md               # This file
 ```
+
+## 🔒 Privacy & Security
+
+- **Local First**: All processing happens on your machine
+- **No Telemetry**: No usage data or analytics collected
+- **Data Sovereignty**: You control all data and models
+- **Transparent**: Open source with clear data handling
 
 ## 🤝 Contributing
 
-1. Follow accessibility-first design principles
-2. Include comprehensive docstrings and type hints
-3. Test with screen readers when possible
-4. Maintain consistent CLI patterns
-5. Update documentation for all changes
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
-## 📄 License
+1. **Accessibility**: All features must support screen readers
+2. **Documentation**: Comprehensive docstrings and type hints
+3. **Testing**: New features require corresponding tests
+4. **Consistency**: Follow established patterns and conventions
 
-MIT License - Built with ❤️ for accessibility and local AI.
+## 📝 License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built on [Ollama](https://ollama.ai/) for local AI inference
+- Powered by [Typer](https://typer.tiangolo.com/) and [Rich](https://rich.readthedocs.io/) for CLI
+- Inspired by accessibility-first design principles
+
+---
+
+**🎯 Mission**: Build the most accessible, privacy-focused document chat system available, empowering users with local AI while maintaining the highest standards of usability and technical excellence.
