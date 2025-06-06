@@ -623,9 +623,10 @@ def models_command(
 @app.command(name="version")
 def version_command():
     """Show version information."""
-    console.print("[bold]Llamaball[/bold] version [green]0.1.0[/green]")
-    console.print("🦙 Accessible document chat and RAG system")
-    console.print("Built with ❤️  for accessibility and local AI")
+    from . import __version__
+    console.print(f"[bold]Llamaball[/bold] version [green]{__version__}[/green]")
+    console.print("🦙 High-performance document chat and RAG system")
+    console.print("Built with ❤️  for local AI and accessibility")
 
 
 # Helper functions
