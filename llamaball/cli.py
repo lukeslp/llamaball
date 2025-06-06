@@ -37,10 +37,12 @@ Features:
 • Multiple model support
 
 Examples:
+  llamaball models                      # List available models
   llamaball ingest .                    # Ingest current directory
   llamaball ingest ~/docs -r            # Recursively ingest docs folder
   llamaball chat                        # Start interactive chat
-  llamaball chat --model qwen3:0.6b     # Chat with specific model
+  llamaball chat -c llamaball-qwen3:4b  # Chat with specific model
+  llamaball chat --temp 0.3 --max-tokens 1024  # Adjust parameters
   llamaball stats                       # Show database statistics
   
 Get started:
@@ -369,6 +371,49 @@ def clear_db_command(
     except Exception as e:
         console.print(f"[bold red]❌ Failed to clear database:[/bold red] {e}")
         raise typer.Exit(1)
+
+@app.command(name="models")
+def models_command(
+    custom_model: Optional[str] = typer.Argument(None, help="Show details for a specific model"),
+    format: str = typer.Option("table", "--format", "-f", help="Output format: table, json, plain")
+):
+    """
+    🤖 List available Ollama models.
+    
+    Display all locally available models with their sizes, families, and parameters.
+    Useful for choosing which model to use for chat sessions.
+    
+    Examples:
+      llamaball models                        # List all models
+      llamaball models llamaball-qwen3:4b     # Show specific model details
+      llamaball models --format json         # JSON output
+    """
+    from llamaball.core import get_available_models, format_model_size
+    
+    models = get_available_models(custom_model)
+    
+    if not models:
+        console.print("[yellow]No models found. Make sure Ollama is running.[/yellow]")
+        return
+    
+    if format == "json":
+        import json
+        console.print(json.dumps(models, indent=2))
+    elif format == "plain":
+        for model in models:
+            console.print(f"{model['name']}")
+    else:
+        if custom_model and len(models) == 1:
+            # Show detailed info for single model
+            model = models[0]
+            details = model.get("details", {})
+            console.print(f"[bold]Model:[/bold] {model['name']}")
+            console.print(f"[bold]Size:[/bold] {format_model_size(model['size'])}")
+            console.print(f"[bold]Family:[/bold] {details.get('family', 'unknown')}")
+            console.print(f"[bold]Parameters:[/bold] {details.get('parameter_size', 'unknown')}")
+            console.print(f"[bold]Quantization:[/bold] {details.get('quantization_level', 'unknown')}")
+        else:
+            list_available_models(custom_model)
 
 @app.command(name="version")
 def version_command():

@@ -126,7 +126,7 @@ doc_chat_ai/
 - **Real-time Configuration**: All model parameters can be changed mid-conversation
 - **Status Monitoring**: Added `/status` command to view current model and parameter settings
 
-### New Chat Commands
+### New Chat Commands (Interactive Session)
 - ✅ `/models` - List all available Ollama models with details
 - ✅ `/model <name>` - Switch to a different chat model instantly  
 - ✅ `/temp <0.0-2.0>` - Adjust response creativity/randomness
@@ -137,6 +137,18 @@ doc_chat_ai/
 - ✅ `/status` - Display current model and parameter configuration
 - ✅ `/commands` - Show all available chat commands
 
+### New CLI Commands & Options
+- ✅ `llamaball models` - Dedicated command for model management
+- ✅ `llamaball models <name>` - Show specific model details
+- ✅ `llamaball models --format json|plain` - Different output formats
+- ✅ `llamaball chat --list-models` - List models from chat command
+- ✅ `llamaball chat -c <model>` - Specify chat model directly
+- ✅ `llamaball chat --temperature <0.0-2.0>` - Set temperature from CLI
+- ✅ `llamaball chat --max-tokens <1-8192>` - Set max tokens from CLI
+- ✅ `llamaball chat --top-p <0.0-1.0>` - Set nucleus sampling from CLI
+- ✅ `llamaball chat --top-k-sampling <int>` - Set top-K sampling from CLI
+- ✅ `llamaball chat --repeat-penalty <0.0-2.0>` - Set repeat penalty from CLI
+
 ### Verified Functionality
 - ✅ `llamaball --help` - Main CLI help and welcome screen
 - ✅ `llamaball version` - Version information display
@@ -146,8 +158,15 @@ doc_chat_ai/
 - ✅ Package imports: `import llamaball` works correctly
 - ✅ Module execution: Both `python -m llamaball` and `llamaball` work
 - ✅ **Dynamic Model Control** - Change models and parameters during chat
-- ✅ **Model Listing** - View all available models with size/parameter info
+- ✅ **Model Listing** - View all available models with size/parameter info  
 - ✅ **Parameter Tuning** - Real-time adjustment of generation parameters
+- ✅ **CLI Model Control** - Set models and parameters directly from command line
+- ✅ **Dedicated Models Command** - `llamaball models` for model management
+- ✅ **CLI Parameter Override** - `--temperature 0.1 --max-tokens 200` work correctly
+- ✅ **Model Details Display** - `llamaball models <name>` shows specific model info
+- ✅ **Format Options** - `--format json|plain|table` output variants
+- ✅ **List Models Integration** - `llamaball chat --list-models` displays and exits
+- ✅ **Interactive Status** - `/status` command shows all current configuration
 
 ## 🚧 Outstanding Tasks
 

@@ -238,11 +238,11 @@ def search_embeddings(query: str, db_path: str, model_name: str, top_k: int, pro
     conn.close()
     return results
 
-def get_available_models(fallback_custom: Optional[str] = None) -> List[dict]:
+def get_available_models(filter_model: Optional[str] = None) -> List[dict]:
     """
     Fetch available Ollama models using the /tags endpoint.
     Returns a list of model dictionaries with name, size, and other details.
-    If the API call fails, returns the fallback_custom model if provided.
+    If filter_model is provided, returns only that model or empty list if not found.
     """
     try:
         # Try to get models from Ollama API
@@ -258,6 +258,15 @@ def get_available_models(fallback_custom: Optional[str] = None) -> List[dict]:
                     "digest": model.get("digest", ""),
                     "details": model.get("details", {})
                 })
+            
+            # Filter for specific model if requested
+            if filter_model:
+                filtered_models = [m for m in models if m["name"] == filter_model]
+                if not filtered_models:
+                    # If not found, create a placeholder entry
+                    return [{"name": filter_model, "size": 0, "modified_at": "", "digest": "", "details": {}}]
+                return filtered_models
+            
             return models
         else:
             logger.warning(f"Failed to fetch models from Ollama API: {response.status_code}")
@@ -265,8 +274,8 @@ def get_available_models(fallback_custom: Optional[str] = None) -> List[dict]:
         logger.warning(f"Error fetching models from Ollama API: {e}")
     
     # Fallback to custom model if provided
-    if fallback_custom:
-        return [{"name": fallback_custom, "size": 0, "modified_at": "", "digest": "", "details": {}}]
+    if filter_model:
+        return [{"name": filter_model, "size": 0, "modified_at": "", "digest": "", "details": {}}]
     
     # Default fallback models
     return [
