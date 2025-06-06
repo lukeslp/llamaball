@@ -146,11 +146,22 @@ def ingest_files(
     recursive: bool,
     exclude_patterns: Optional[List[str]] = None,
     force: bool = False,
+    progress_callback: Optional[callable] = None,
 ) -> Dict[str, Union[int, List[str]]]:
     """
     Ingest files with comprehensive parsing, chunk by token boundaries,
     skip unchanged files, and enqueue embedding tasks.
     
+    Args:
+        directory: Directory to scan for files
+        db_path: SQLite database path
+        model_name: Embedding model name
+        provider: Provider (ollama or openai)
+        recursive: Whether to scan recursively
+        exclude_patterns: Patterns to exclude
+        force: Force re-indexing all files
+        progress_callback: Optional callback for progress updates
+        
     Returns:
         Dictionary with statistics about ingestion process
         
@@ -159,15 +170,45 @@ def ingest_files(
         - Intelligent file change detection
         - Memory-efficient chunking
         - Comprehensive error handling
+        - Real-time progress tracking
     """
     import fnmatch
+    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn
 
     if exclude_patterns is None:
         exclude_patterns = []
 
+    # First pass: count files for progress tracking
+    total_files = 0
+    file_list = []
+    
     walker = (
         os.walk(directory) if recursive else [(directory, [], os.listdir(directory))]
     )
+    
+    for root, dirs, files in walker:
+        for fname in files:
+            path = os.path.join(root, fname)
+            rel_path = os.path.relpath(path, directory) if recursive else fname
+            
+            # Check exclude patterns
+            if any(
+                fnmatch.fnmatch(rel_path, pattern) or fnmatch.fnmatch(fname, pattern)
+                for pattern in exclude_patterns
+            ):
+                continue
+                
+            # Check if file type is supported
+            if not is_supported_file(path):
+                continue
+                
+            if not os.path.isfile(path):
+                continue
+                
+            file_list.append((path, rel_path))
+            total_files += 1
+
+    # Initialize database and setup
     conn = init_db(db_path)
     c = conn.cursor()
     encoder = tiktoken.get_encoding("cl100k_base")
@@ -186,119 +227,30 @@ def ingest_files(
     
     embed_tasks = []
     
-    for root, dirs, files in walker:
-        for fname in files:
-            path = os.path.join(root, fname)
-            rel_path = os.path.relpath(path, directory) if recursive else fname
-
-            # Check exclude patterns
-            if any(
-                fnmatch.fnmatch(rel_path, pattern) or fnmatch.fnmatch(fname, pattern)
-                for pattern in exclude_patterns
-            ):
-                logger.debug(f"Excluding file: {rel_path}")
-                stats['skipped_files'] += 1
-                continue
-
-            # Check if file type is supported
-            if not is_supported_file(path):
-                logger.debug(f"Skipping unsupported file type: {rel_path}")
-                stats['skipped_files'] += 1
-                continue
-                
-            if not os.path.isfile(path):
-                logger.debug(f"Skipping non-file: {rel_path}")
-                stats['skipped_files'] += 1
-                continue
-                
-            # Check if file has changed (unless force mode)
-            if not force:
-                mtime = os.path.getmtime(path)
-                c.execute("SELECT mtime FROM files WHERE filename = ?", (rel_path,))
-                row = c.fetchone()
-                if row and row[0] == mtime:
-                    logger.info(f"Skipping unchanged file: {rel_path}")
-                    stats['skipped_files'] += 1
-                    continue
-            
-            # Parse file content
-            try:
-                parse_result = file_parser.parse_file(path)
-                
-                if parse_result['error']:
-                    error_msg = parse_result['error']
-                    # Categorize errors for better user experience
-                    if "not available" in error_msg and "Install with:" in error_msg:
-                        logger.info(f"Optional dependency missing for {rel_path}: {error_msg}")
-                        stats['skipped_files'] += 1
-                        continue
-                    elif "corrupted" in error_msg or "not a valid" in error_msg:
-                        logger.warning(f"Corrupted file {rel_path}: {error_msg}")
-                        stats['error_files'] += 1
-                        stats['error_messages'].append(f"{rel_path}: {error_msg}")
-                        continue
-                    elif "password protected" in error_msg or "encrypted" in error_msg:
-                        logger.warning(f"Protected file {rel_path}: {error_msg}")
-                        stats['error_files'] += 1
-                        stats['error_messages'].append(f"{rel_path}: {error_msg}")
-                        continue
-                    else:
-                        logger.warning(f"Error parsing {rel_path}: {error_msg}")
-                        stats['error_files'] += 1
-                        stats['error_messages'].append(f"{rel_path}: {error_msg}")
-                        continue
-                
-                content = parse_result['content'].strip()
-                if not content:
-                    logger.debug(f"Empty content for {rel_path}")
-                    stats['skipped_files'] += 1
-                    continue
-                    
-                # Track file extension
-                ext = Path(path).suffix.lower()
-                stats['processed_extensions'].add(ext)
-                    
-            except Exception as e:
-                logger.warning(f"Unexpected error loading {rel_path}: {e}")
-                stats['error_files'] += 1
-                stats['error_messages'].append(f"{rel_path}: Unexpected error - {str(e)}")
-                continue
-            
-            # Chunk content by token boundaries
-            paragraphs = re.split(r"\n\s*\n", content)
-            token_buffer = []
-            chunk_count = 0
-            
-            for para in paragraphs:
-                para_tokens = encoder.encode(para, disallowed_special=())
-                if len(token_buffer) + len(para_tokens) > MAX_TOKENS:
-                    if token_buffer:  # Only create chunk if buffer has content
-                        text_chunk = encoder.decode(token_buffer)
-                        _insert_chunk(c, rel_path, chunk_count, text_chunk)
-                        embed_tasks.append((rel_path, text_chunk, chunk_count))
-                        chunk_count += 1
-                        stats['total_chunks'] += 1
-                    token_buffer = para_tokens
-                else:
-                    token_buffer += para_tokens
-            
-            # Handle remaining buffer
-            if token_buffer:
-                text_chunk = encoder.decode(token_buffer)
-                _insert_chunk(c, rel_path, chunk_count, text_chunk)
-                embed_tasks.append((rel_path, text_chunk, chunk_count))
-                stats['total_chunks'] += 1
-            
-            # Update file modification time
-            mtime = os.path.getmtime(path)
-            c.execute(
-                "INSERT OR REPLACE INTO files (filename, mtime) VALUES (?, ?)",
-                (rel_path, mtime),
+    # Enhanced progress tracking
+    if progress_callback:
+        # Use external progress callback (from CLI)
+        for i, (path, rel_path) in enumerate(file_list):
+            progress_callback(i + 1, total_files, rel_path)
+            _process_single_file(
+                path, rel_path, c, encoder, force, stats, embed_tasks, directory
             )
-            conn.commit()
+    else:
+        # Internal progress display for API usage
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            TimeElapsedColumn(),
+        ) as progress:
+            task = progress.add_task("Processing files...", total=total_files)
             
-            stats['processed_files'] += 1
-            logger.info(f"Processed {rel_path} -> {chunk_count + 1 if token_buffer else chunk_count} chunks")
+            for i, (path, rel_path) in enumerate(file_list):
+                progress.update(task, advance=1, description=f"Processing {rel_path}")
+                _process_single_file(
+                    path, rel_path, c, encoder, force, stats, embed_tasks, directory
+                )
     
     conn.close()
     
@@ -311,7 +263,112 @@ def ingest_files(
     if stats['error_files'] > 0:
         logger.warning(f"Encountered errors in {stats['error_files']} files")
 
-    # Parallel embedding generation
+    # Enhanced parallel embedding generation with progress
+    if embed_tasks:
+        if progress_callback:
+            _process_embeddings_with_callback(embed_tasks, db_path, model_name, provider, stats, progress_callback)
+        else:
+            _process_embeddings_internal(embed_tasks, db_path, model_name, provider, stats)
+    
+    logger.info(f"Ingestion complete: {stats['processed_files']} files, {stats['total_chunks']} chunks")
+    
+    return stats
+
+
+def _process_single_file(path, rel_path, cursor, encoder, force, stats, embed_tasks, directory):
+    """Process a single file for ingestion."""
+    try:
+        # Check if file has changed (unless force mode)
+        if not force:
+            mtime = os.path.getmtime(path)
+            cursor.execute("SELECT mtime FROM files WHERE filename = ?", (rel_path,))
+            row = cursor.fetchone()
+            if row and row[0] == mtime:
+                logger.debug(f"Skipping unchanged file: {rel_path}")
+                stats['skipped_files'] += 1
+                return
+        
+        # Parse file content
+        parse_result = file_parser.parse_file(path)
+        
+        if parse_result['error']:
+            error_msg = parse_result['error']
+            # Categorize errors for better user experience
+            if "not available" in error_msg and "Install with:" in error_msg:
+                logger.info(f"Optional dependency missing for {rel_path}: {error_msg}")
+                stats['skipped_files'] += 1
+                return
+            elif "corrupted" in error_msg or "not a valid" in error_msg:
+                logger.warning(f"Corrupted file {rel_path}: {error_msg}")
+                stats['error_files'] += 1
+                stats['error_messages'].append(f"{rel_path}: {error_msg}")
+                return
+            elif "password protected" in error_msg or "encrypted" in error_msg:
+                logger.warning(f"Protected file {rel_path}: {error_msg}")
+                stats['error_files'] += 1
+                stats['error_messages'].append(f"{rel_path}: {error_msg}")
+                return
+            else:
+                logger.warning(f"Error parsing {rel_path}: {error_msg}")
+                stats['error_files'] += 1
+                stats['error_messages'].append(f"{rel_path}: {error_msg}")
+                return
+        
+        content = parse_result['content'].strip()
+        if not content:
+            logger.debug(f"Empty content for {rel_path}")
+            stats['skipped_files'] += 1
+            return
+            
+        # Track file extension
+        ext = Path(path).suffix.lower()
+        stats['processed_extensions'].add(ext)
+            
+    except Exception as e:
+        logger.warning(f"Unexpected error loading {rel_path}: {e}")
+        stats['error_files'] += 1
+        stats['error_messages'].append(f"{rel_path}: Unexpected error - {str(e)}")
+        return
+    
+    # Chunk content by token boundaries
+    paragraphs = re.split(r"\n\s*\n", content)
+    token_buffer = []
+    chunk_count = 0
+    
+    for para in paragraphs:
+        para_tokens = encoder.encode(para, disallowed_special=())
+        if len(token_buffer) + len(para_tokens) > MAX_TOKENS:
+            if token_buffer:  # Only create chunk if buffer has content
+                text_chunk = encoder.decode(token_buffer)
+                _insert_chunk(cursor, rel_path, chunk_count, text_chunk)
+                embed_tasks.append((rel_path, text_chunk, chunk_count))
+                chunk_count += 1
+                stats['total_chunks'] += 1
+            token_buffer = para_tokens
+        else:
+            token_buffer += para_tokens
+    
+    # Handle remaining buffer
+    if token_buffer:
+        text_chunk = encoder.decode(token_buffer)
+        _insert_chunk(cursor, rel_path, chunk_count, text_chunk)
+        embed_tasks.append((rel_path, text_chunk, chunk_count))
+        stats['total_chunks'] += 1
+    
+    # Update file modification time
+    mtime = os.path.getmtime(path)
+    cursor.execute(
+        "INSERT OR REPLACE INTO files (filename, mtime) VALUES (?, ?)",
+        (rel_path, mtime),
+    )
+    cursor.connection.commit()
+    
+    stats['processed_files'] += 1
+    logger.debug(f"Processed {rel_path} -> {chunk_count + 1 if token_buffer else chunk_count} chunks")
+
+
+def _process_embeddings_with_callback(embed_tasks, db_path, model_name, provider, stats, progress_callback):
+    """Process embeddings with external progress callback."""
     def embed_worker(task):
         rel_path, chunk, chunk_idx = task
         conn_thread = sqlite3.connect(db_path, check_same_thread=False)
@@ -344,10 +401,54 @@ def ingest_files(
     max_workers = min(8, len(embed_tasks)) if embed_tasks else 1
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         list(pool.map(embed_worker, embed_tasks))
+
+
+def _process_embeddings_internal(embed_tasks, db_path, model_name, provider, stats):
+    """Process embeddings with internal progress display."""
+    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn
     
-    logger.info(f"Ingestion complete: {stats['processed_files']} files, {stats['total_chunks']} chunks")
-    
-    return stats
+    def embed_worker(task):
+        rel_path, chunk, chunk_idx = task
+        conn_thread = sqlite3.connect(db_path, check_same_thread=False)
+        c_thread = conn_thread.cursor()
+        c_thread.execute(
+            "SELECT id FROM documents WHERE filename = ? AND content = ?",
+            (rel_path, chunk),
+        )
+        row = c_thread.fetchone()
+        if not row:
+            conn_thread.close()
+            return
+        doc_id = row[0]
+        try:
+            emb = get_embedding(chunk, model_name, provider)
+            emb_blob = emb.tobytes()
+            c_thread.execute(
+                "INSERT OR REPLACE INTO embeddings (doc_id, embedding) VALUES (?, ?)",
+                (doc_id, emb_blob),
+            )
+            conn_thread.commit()
+            logger.debug(f"Embedded {rel_path} chunk {chunk_idx} (doc_id={doc_id})")
+        except Exception as e:
+            logger.error(f"Error embedding {rel_path} chunk {chunk_idx}: {e}")
+            stats['error_messages'].append(f"Embedding {rel_path} chunk {chunk_idx}: {str(e)}")
+        finally:
+            conn_thread.close()
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        TimeElapsedColumn(),
+    ) as progress:
+        task = progress.add_task("Generating embeddings...", total=len(embed_tasks))
+        
+        # Use ThreadPoolExecutor for parallel embedding
+        max_workers = min(8, len(embed_tasks)) if embed_tasks else 1
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            for _ in pool.map(embed_worker, embed_tasks):
+                progress.advance(task)
 
 
 def search_embeddings(

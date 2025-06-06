@@ -8,6 +8,7 @@ Outputs: Formatted terminal output with accessibility features
 """
 
 import sys
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -16,41 +17,89 @@ from rich import print as rprint
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+from rich.progress import (
+    Progress, SpinnerColumn, TextColumn, BarColumn, 
+    TaskProgressColumn, TimeElapsedColumn, TimeRemainingColumn,
+    MofNCompleteColumn
+)
+from rich.live import Live
+from rich.layout import Layout
+from rich.text import Text
+from rich.align import Align
+from rich.columns import Columns
+from rich.tree import Tree
+from rich.markdown import Markdown
+from rich.syntax import Syntax
+from rich.status import Status
 
 from . import core
 
-# Initialize rich console for better output
-console = Console()
+# Initialize rich console with enhanced settings
+console = Console(
+    color_system="truecolor",
+    force_terminal=True,
+    width=None,  # Auto-detect terminal width
+    legacy_windows=False
+)
+
+# Color themes for different contexts
+THEME_COLORS = {
+    'primary': '#00D4AA',      # Teal
+    'secondary': '#0066CC',    # Blue  
+    'success': '#00C851',      # Green
+    'warning': '#FFB84D',      # Orange
+    'error': '#FF4444',        # Red
+    'info': '#33B5E5',         # Light Blue
+    'muted': '#6C757D',        # Gray
+    'accent': '#9C27B0',       # Purple
+    'highlight': '#FFD700'     # Gold
+}
+
+# Enhanced spinner styles
+SPINNERS = [
+    "dots", "dots2", "dots3", "dots4", "dots5", "dots6", "dots7", 
+    "dots8", "dots9", "dots10", "dots11", "dots12",
+    "line", "line2", "pipe", "simpleDots", "simpleDotsScrolling",
+    "star", "star2", "flip", "hamburger", "growVertical", "growHorizontal",
+    "balloon", "balloon2", "noise", "bounce", "boxBounce", "boxBounce2",
+    "triangle", "arc", "circle", "squareCorners", "circleQuarters",
+    "circleHalves", "squish", "toggle", "toggle2", "toggle3", "toggle4",
+    "toggle5", "toggle6", "toggle7", "toggle8", "toggle9", "toggle10",
+    "toggle11", "toggle12", "toggle13", "arrow", "arrow2", "arrow3",
+    "bouncingBar", "bouncingBall", "smiley", "monkey", "hearts", "clock",
+    "earth", "moon", "runner", "pong", "shark", "dqpb", "weather",
+    "christmas"
+]
 
 # Main app with comprehensive help
 app = typer.Typer(
     name="llamaball",
-    help="""
-🦙 Llamaball: Accessible Document Chat & RAG System
+    help=f"""
+[bold {THEME_COLORS['primary']}]🦙 Llamaball: Accessible Document Chat & RAG System[/bold {THEME_COLORS['primary']}]
 
-An ethical, accessible, and actually useful document chat system powered by Ollama.
-Perfect for researchers, developers, and anyone who needs to chat with their documents.
+[italic {THEME_COLORS['muted']}]An ethical, accessible, and actually useful document chat system powered by Ollama.[/italic {THEME_COLORS['muted']}]
+[italic {THEME_COLORS['muted']}]Perfect for researchers, developers, and anyone who needs to chat with their documents.[/italic {THEME_COLORS['muted']}]
 
-Features:
-• Local AI processing (no data leaves your machine)
-• Accessibility-first design (screen reader friendly)
-• Fast semantic search and retrieval
-• Function calling and tool execution
-• Multiple model support
+[bold {THEME_COLORS['accent']}]✨ Features:[/bold {THEME_COLORS['accent']}]
+• [bold {THEME_COLORS['info']}]Local AI processing[/bold {THEME_COLORS['info']}] (no data leaves your machine)
+• [bold {THEME_COLORS['success']}]Accessibility-first design[/bold {THEME_COLORS['success']}] (screen reader friendly)
+• [bold {THEME_COLORS['primary']}]Fast semantic search and retrieval[/bold {THEME_COLORS['primary']}]
+• [bold {THEME_COLORS['warning']}]Function calling and tool execution[/bold {THEME_COLORS['warning']}]
+• [bold {THEME_COLORS['accent']}]Multiple model support[/bold {THEME_COLORS['accent']}]
 
-Examples:
-  llamaball models                      # List available models
-  llamaball ingest .                    # Ingest current directory
-  llamaball ingest ~/docs -r            # Recursively ingest docs folder
-  llamaball chat                        # Start interactive chat
-  llamaball chat -c llamaball-qwen3:4b  # Chat with specific model
-  llamaball chat --temp 0.3 --max-tokens 1024  # Adjust parameters
-  llamaball stats                       # Show database statistics
+[bold {THEME_COLORS['highlight']}]🚀 Quick Examples:[/bold {THEME_COLORS['highlight']}]
+  [bold]llamaball models[/bold]                      [dim]# List available models[/dim]
+  [bold]llamaball ingest .[/bold]                    [dim]# Ingest current directory[/dim]
+  [bold]llamaball ingest ~/docs -r[/bold]            [dim]# Recursively ingest docs folder[/dim]
+  [bold]llamaball chat[/bold]                        [dim]# Start interactive chat[/dim]
+  [bold]llamaball chat -c llamaball-qwen3:4b[/bold]  [dim]# Chat with specific model[/dim]
+  [bold]llamaball chat --temp 0.3 --max-tokens 1024[/bold]  [dim]# Adjust parameters[/dim]
+  [bold]llamaball stats[/bold]                       [dim]# Show database statistics[/dim]
   
-Get started:
-  1. llamaball ingest --dir /path/to/docs
-  2. llamaball chat
-  3. Ask questions about your documents!
+[bold {THEME_COLORS['success']}]🎯 Get started:[/bold {THEME_COLORS['success']}]
+  [bold]1.[/bold] [cyan]llamaball ingest --dir /path/to/docs[/cyan]
+  [bold]2.[/bold] [cyan]llamaball chat[/cyan]
+  [bold]3.[/bold] [cyan]Ask questions about your documents![/cyan]
 """,
     rich_markup_mode="rich",
     no_args_is_help=True,
@@ -58,20 +107,98 @@ Get started:
 )
 
 
+def create_gradient_text(text: str, colors: list) -> Text:
+    """Create gradient text effect with multiple colors."""
+    rich_text = Text()
+    text_len = len(text)
+    
+    if len(colors) < 2:
+        colors = [THEME_COLORS['primary'], THEME_COLORS['accent']]
+    
+    for i, char in enumerate(text):
+        # Calculate color position (0.0 to 1.0)
+        position = i / max(text_len - 1, 1)
+        
+        # Simple two-color gradient
+        if position < 0.5:
+            color = colors[0]
+        else:
+            color = colors[1]
+            
+        rich_text.append(char, style=color)
+    
+    return rich_text
+
+
 def show_welcome():
-    """Display welcome message with ASCII art and quick start info"""
-    welcome_text = """
-[bold green]🦙 Welcome to Llamaball![/bold green]
-[italic]Accessible, ethical, actually useful document chat[/italic]
+    """Display welcome message with beautiful styling and animations."""
+    
+    # Create animated title
+    title = create_gradient_text("🦙 Llamaball", [THEME_COLORS['primary'], THEME_COLORS['accent']])
+    
+    welcome_content = f"""
+[bold {THEME_COLORS['primary']}]Welcome to Llamaball![/bold {THEME_COLORS['primary']}]
+[italic {THEME_COLORS['muted']}]Accessible, ethical, actually useful document chat[/italic {THEME_COLORS['muted']}]
 
-[bold]Quick Start:[/bold]
-• [cyan]llamaball ingest .[/cyan] - Index current directory
-• [cyan]llamaball chat[/cyan] - Start chatting with your docs
-• [cyan]llamaball --help[/cyan] - Show detailed help
+[bold {THEME_COLORS['success']}]🚀 Quick Start:[/bold {THEME_COLORS['success']}]
+• [bold cyan]llamaball ingest .[/bold cyan] - Index current directory
+• [bold cyan]llamaball chat[/bold cyan] - Start chatting with your docs
+• [bold cyan]llamaball --help[/bold cyan] - Show detailed help
 
-[bold]Need help?[/bold] All commands support [cyan]--help[/cyan] flag
+[bold {THEME_COLORS['info']}]💡 Need help?[/bold {THEME_COLORS['info']}] All commands support [bold cyan]--help[/bold cyan] flag
+
+[bold {THEME_COLORS['warning']}]🎨 Tip:[/bold {THEME_COLORS['warning']}] Use [bold]--show-types[/bold] with ingest to see all supported file formats!
 """
-    console.print(Panel(welcome_text, title="Llamaball", border_style="green"))
+    
+    # Create a beautiful panel with gradient border
+    panel = Panel(
+        Align.center(welcome_content),
+        title=Align.center(title),
+        border_style=THEME_COLORS['primary'],
+        padding=(1, 2),
+        expand=True
+    )
+    
+    console.print()
+    console.print(panel)
+    console.print()
+
+
+def create_file_type_tree():
+    """Create a beautiful tree view of supported file types."""
+    tree = Tree(
+        f"[bold {THEME_COLORS['primary']}]📁 Supported File Types[/bold {THEME_COLORS['primary']}]",
+        style=THEME_COLORS['primary']
+    )
+    
+    from .parsers import FileParser
+    parser = FileParser()
+    
+    categories = [
+        ("📝 Text Documents", parser.TEXT_EXTENSIONS, THEME_COLORS['success']),
+        ("💻 Source Code", parser.CODE_EXTENSIONS, THEME_COLORS['info']),
+        ("🌐 Web Files", parser.WEB_EXTENSIONS, THEME_COLORS['warning']),
+        ("📊 Data Files", parser.DATA_EXTENSIONS, THEME_COLORS['accent']),
+        ("📄 Documents", parser.DOCUMENT_EXTENSIONS, THEME_COLORS['primary']),
+        ("📈 Spreadsheets", parser.SPREADSHEET_EXTENSIONS, THEME_COLORS['success']),
+        ("📓 Notebooks", parser.NOTEBOOK_EXTENSIONS, THEME_COLORS['info']),
+        ("📧 Email", parser.EMAIL_EXTENSIONS, THEME_COLORS['warning']),
+        ("🗜️ Archives", parser.ARCHIVE_EXTENSIONS, THEME_COLORS['error']),
+        ("⚙️ Config", parser.CONFIG_EXTENSIONS, THEME_COLORS['muted'])
+    ]
+    
+    for category_name, extensions, color in categories:
+        if extensions:
+            category_branch = tree.add(f"[bold {color}]{category_name}[/bold {color}]")
+            
+            # Group extensions by rows for better display
+            ext_list = sorted(extensions)
+            for i in range(0, len(ext_list), 6):
+                row_extensions = ext_list[i:i+6]
+                row_text = " ".join([f"[{color}]{ext}[/{color}]" for ext in row_extensions])
+                category_branch.add(row_text)
+    
+    return tree
 
 
 @app.callback()
@@ -84,20 +211,28 @@ def main(
     ),
 ):
     """
-    Llamaball: Accessible document chat and RAG system powered by Ollama.
+    🦙 Llamaball: Accessible document chat and RAG system powered by Ollama.
 
     Run without arguments to see this help, or use specific commands below.
     """
     if version:
-        console.print(f"[bold]Llamaball[/bold] version [green]0.1.0[/green]")
-        console.print("Built with ❤️  for accessibility and local AI")
+        from . import __version__
+        
+        version_panel = Panel(
+            f"""[bold {THEME_COLORS['primary']}]Llamaball[/bold {THEME_COLORS['primary']}] version [bold {THEME_COLORS['success']}]{__version__}[/bold {THEME_COLORS['success']}]
+[{THEME_COLORS['muted']}]🦙 High-performance document chat and RAG system[/{THEME_COLORS['muted']}]
+[{THEME_COLORS['accent']}]Built with ❤️  for accessibility and local AI[/{THEME_COLORS['accent']}]""",
+            title="[bold]Version Info[/bold]",
+            border_style=THEME_COLORS['primary'],
+            padding=(1, 2)
+        )
+        console.print(version_panel)
         raise typer.Exit()
 
     if verbose:
         import logging
-
         logging.getLogger().setLevel(logging.DEBUG)
-        console.print("[dim]Verbose logging enabled[/dim]")
+        console.print(f"[dim {THEME_COLORS['muted']}]✓ Verbose logging enabled[/dim {THEME_COLORS['muted']}]")
 
 
 @app.command(name="ingest")
@@ -134,13 +269,16 @@ def ingest_command(
     This command scans the specified directory, extracts text from supported files,
     chunks the content intelligently, and creates embeddings for semantic search.
 
-    Supported file types include:
-    • Text: .txt, .md, .rst, .tex, .org, .wiki, etc.
-    • Code: .py, .js, .ts, .html, .css, .json, .yaml, .sql, etc.
-    • Documents: .pdf, .docx, .doc
-    • Data: .csv, .tsv, .xlsx, .xls, .jsonl
-    • Spreadsheets: .xlsx, .xls, .ods
-    • Notebooks: .ipynb (Jupyter notebooks)
+    Supported file categories include:
+    • 📝 Text: .txt, .md, .rst, .tex, .org, .wiki, .rtf, .textile, etc.
+    • 💻 Code: .py, .js, .ts, .html, .css, .json, .yaml, .sql, .gradle, etc.
+    • 🌐 Web: .html, .htm, .xml, .rss, .atom, .svg, .jsp, .php, etc.
+    • 📄 Documents: .pdf, .docx, .doc, .odt, .pages, .rtf
+    • 📊 Data: .csv, .tsv, .xlsx, .xls, .jsonl, .parquet, .pickle, etc.
+    • 📓 Notebooks: .ipynb, .rmd, .qmd (Jupyter, R Markdown)
+    • 📧 Email: .eml, .msg, .mbox
+    • 🗜️ Archives: .zip, .tar, .tar.gz, .7z (with content extraction)
+    • ⚙️ Config: .conf, .env, .gitignore, .editorconfig, etc.
 
     Examples:
       llamaball ingest                    # Ingest current directory
@@ -223,10 +361,54 @@ def ingest_command(
 
     try:
         if not quiet:
-            with console.status("🔍 Processing documents..."):
-                stats = core.ingest_files(
-                    directory, db, model, provider, recursive, exclude_patterns, force
+            # Create beautiful progress display with multiple stages
+            with Progress(
+                SpinnerColumn(spinner_style=THEME_COLORS['primary']),
+                TextColumn("[bold blue]{task.description}"),
+                BarColumn(bar_width=40, style=THEME_COLORS['primary'], complete_style=THEME_COLORS['success']),
+                TaskProgressColumn(),
+                TimeElapsedColumn(),
+                TimeRemainingColumn(),
+                console=console,
+                transient=False,
+                expand=False
+            ) as progress:
+                
+                # Add tasks for different stages
+                file_task = progress.add_task(
+                    f"[{THEME_COLORS['info']}]🔍 Scanning files...", 
+                    total=100
                 )
+                
+                process_task = None
+                
+                def progress_callback(current, total, filename):
+                    nonlocal process_task
+                    
+                    if process_task is None:
+                        progress.update(file_task, completed=100)
+                        process_task = progress.add_task(
+                            f"[{THEME_COLORS['primary']}]📄 Processing files...",
+                            total=total
+                        )
+                    
+                    progress.update(
+                        process_task, 
+                        completed=current,
+                        description=f"[{THEME_COLORS['primary']}]📄 Processing {filename[:50]}..."
+                    )
+                
+                # Call core function with progress callback
+                stats = core.ingest_files(
+                    directory, db, model, provider, recursive, exclude_patterns, force,
+                    progress_callback=progress_callback
+                )
+                
+                # Mark all tasks complete
+                if process_task:
+                    progress.update(process_task, completed=100)
+                
+                time.sleep(0.5)  # Brief pause to show completion
         else:
             stats = core.ingest_files(
                 directory, db, model, provider, recursive, exclude_patterns, force
@@ -732,42 +914,69 @@ def get_files_list(
 
 
 def display_stats_table(stats_info: dict, verbose: bool = False):
-    """Display statistics in a formatted table"""
+    """Display statistics in enhanced table format"""
     table = Table(
-        title="📊 Database Statistics", show_header=True, header_style="bold magenta"
+        title=f"[bold {THEME_COLORS['primary']}]📊 Database Statistics[/bold {THEME_COLORS['primary']}]",
+        show_header=True,
+        header_style=f"bold {THEME_COLORS['accent']}",
+        border_style=THEME_COLORS['primary']
     )
-    table.add_column("Metric", style="cyan")
-    table.add_column("Value", style="green")
+    table.add_column("Metric", style=f"bold {THEME_COLORS['info']}")
+    table.add_column("Value", style=THEME_COLORS['success'], justify="right")
+    table.add_column("Description", style=THEME_COLORS['muted'])
 
-    table.add_row("📄 Documents", str(stats_info["docs"]))
-    table.add_row("🔢 Embeddings", str(stats_info["embeddings"]))
-    table.add_row("📁 Files", str(stats_info["files"]))
-    table.add_row("💾 Database Size", f"{stats_info['db_size_mb']} MB")
+    table.add_row("📄 Documents", str(stats_info["docs"]), "Text chunks for search")
+    table.add_row("🔢 Embeddings", str(stats_info["embeddings"]), "Vector representations")
+    table.add_row("📁 Files", str(stats_info["files"]), "Source files indexed")
+    table.add_row("💾 Database Size", f"{stats_info['db_size_mb']} MB", "Storage space used")
 
     if verbose and "file_types" in stats_info:
         for ext, count in list(stats_info["file_types"].items())[:5]:
-            table.add_row(f"📝 .{ext} files", str(count))
+            table.add_row(f"📝 .{ext} files", str(count), f"Files of type {ext}")
 
     console.print(table)
 
 
 def display_files_table(files_info: list):
-    """Display files in a formatted table"""
+    """Display files in enhanced table format"""
     if not files_info:
-        console.print("[yellow]No files found in database[/yellow]")
+        no_files_panel = Panel(
+            f"[bold {THEME_COLORS['warning']}]No files found in database[/bold {THEME_COLORS['warning']}]\n"
+            f"[{THEME_COLORS['muted']}]Run [bold]llamaball ingest[/bold] to add files.[/{THEME_COLORS['muted']}]",
+            border_style=THEME_COLORS['warning']
+        )
+        console.print(no_files_panel)
         return
 
     table = Table(
-        title="📋 Ingested Files", show_header=True, header_style="bold magenta"
+        title=f"[bold {THEME_COLORS['primary']}]📋 Ingested Files[/bold {THEME_COLORS['primary']}]",
+        show_header=True,
+        header_style=f"bold {THEME_COLORS['accent']}",
+        border_style=THEME_COLORS['primary']
     )
-    table.add_column("Filename", style="cyan")
-    table.add_column("Modified", style="green")
+    table.add_column("Filename", style=f"bold {THEME_COLORS['info']}")
+    table.add_column("Modified", style=THEME_COLORS['success'])
+    table.add_column("Type", style=THEME_COLORS['warning'])
 
     for filename, mtime in files_info:
         import datetime
-
+        from pathlib import Path
+        
         mod_time = datetime.datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M")
-        table.add_row(filename, mod_time)
+        file_ext = Path(filename).suffix.lower()
+        
+        # Add file type emoji
+        type_emoji = "📄"
+        if file_ext in {'.py', '.js', '.ts', '.html', '.css'}:
+            type_emoji = "💻"
+        elif file_ext in {'.pdf', '.docx', '.doc'}:
+            type_emoji = "📄"
+        elif file_ext in {'.csv', '.xlsx', '.json'}:
+            type_emoji = "📊"
+        elif file_ext in {'.md', '.txt'}:
+            type_emoji = "📝"
+        
+        table.add_row(filename, mod_time, f"{type_emoji} {file_ext}")
 
     console.print(table)
 
@@ -786,18 +995,23 @@ def start_interactive_chat(
     top_k: int = 40,
     repeat_penalty: float = 1.1,
 ):
-    """Start the interactive chat session"""
+    """Start the interactive chat session with enhanced styling"""
     from prompt_toolkit import PromptSession
     from prompt_toolkit.formatted_text import HTML
     from prompt_toolkit.shortcuts import print_formatted_text
     from prompt_toolkit.styles import Style
 
+    # Enhanced CLI style with theme colors
     CLI_STYLE = Style.from_dict(
         {
-            "b": "bold ansigreen",
-            "ans": "ansicyan",
+            "b": f"bold {THEME_COLORS['primary']}",
+            "ans": f"{THEME_COLORS['accent']}",
             "i": "italic",
-            "u": "underline ansiyellow",
+            "u": f"underline {THEME_COLORS['warning']}",
+            "user": f"bold {THEME_COLORS['info']}",
+            "system": f"bold {THEME_COLORS['success']}",
+            "error": f"bold {THEME_COLORS['error']}",
+            "muted": f"{THEME_COLORS['muted']}",
         }
     )
 
@@ -813,36 +1027,69 @@ def start_interactive_chat(
 
     while True:
         try:
-            user_input = prompt_session.prompt(HTML("<b>🤔 You:</b> "), style=CLI_STYLE)
+            # Enhanced user prompt with styling
+            user_input = prompt_session.prompt(
+                HTML(f"<user>🤔 You:</user> "), 
+                style=CLI_STYLE
+            )
 
             if user_input.lower() in ("exit", "quit", "q"):
-                console.print("[dim]👋 Goodbye![/dim]")
+                goodbye_panel = Panel(
+                    f"[bold {THEME_COLORS['primary']}]👋 Thanks for using Llamaball![/bold {THEME_COLORS['primary']}]\n"
+                    f"[{THEME_COLORS['muted']}]Your conversations help make AI more accessible.[/{THEME_COLORS['muted']}]",
+                    border_style=THEME_COLORS['primary'],
+                    padding=(0, 1)
+                )
+                console.print(goodbye_panel)
                 break
             elif user_input.lower() == "help":
                 show_chat_help()
                 continue
             elif user_input.lower() == "stats":
                 stats_info = get_db_stats(db)
-                console.print(
-                    f"📊 {stats_info['docs']} docs, {stats_info['embeddings']} embeddings"
+                stats_panel = Panel(
+                    f"[bold {THEME_COLORS['info']}]📊 Database Stats[/bold {THEME_COLORS['info']}]\n"
+                    f"[{THEME_COLORS['success']}]📄 Documents: {stats_info['docs']}[/{THEME_COLORS['success']}]\n"
+                    f"[{THEME_COLORS['accent']}]🔢 Embeddings: {stats_info['embeddings']}[/{THEME_COLORS['accent']}]\n"
+                    f"[{THEME_COLORS['warning']}]📁 Files: {stats_info['files']}[/{THEME_COLORS['warning']}]",
+                    border_style=THEME_COLORS['info']
                 )
+                console.print(stats_panel)
                 continue
             elif user_input.lower() == "clear":
                 chat_session.reset_history()
-                console.print("[dim]🧹 Conversation history cleared[/dim]")
+                console.print(f"[{THEME_COLORS['success']}]🧹 Conversation history cleared[/{THEME_COLORS['success']}]")
                 continue
             elif not user_input.strip():
                 continue
 
-            # Check for chat commands (model switching, parameter changes, etc.)
+            # Check for chat commands
             command_result = handle_chat_command(user_input, chat_session)
             if command_result is not None:
-                # It was a command, display the result
-                console.print(f"[cyan]🔧 System:[/cyan]\n{command_result}\n")
+                command_panel = Panel(
+                    f"[{THEME_COLORS['info']}]{command_result}[/{THEME_COLORS['info']}]",
+                    title=f"[bold {THEME_COLORS['accent']}]🔧 System[/bold {THEME_COLORS['accent']}]",
+                    border_style=THEME_COLORS['accent']
+                )
+                console.print(command_panel)
                 continue
 
-            # Show thinking indicator
-            with console.status("🤖 Thinking...") as status:
+            # Enhanced thinking indicator with animation
+            thinking_messages = [
+                "🤖 Analyzing documents...",
+                "🔍 Searching knowledge base...", 
+                "🧠 Generating response...",
+                "✨ Crafting answer..."
+            ]
+            
+            with Progress(
+                SpinnerColumn(spinner_style=THEME_COLORS['primary']),
+                TextColumn("[bold blue]{task.description}"),
+                console=console,
+                transient=True
+            ) as progress:
+                task = progress.add_task(thinking_messages[0], total=None)
+                
                 try:
                     response = core.chat(
                         db=chat_session.db,
@@ -863,59 +1110,74 @@ def start_interactive_chat(
                         {"role": "assistant", "content": response}
                     )
                 except Exception as e:
-                    console.print(f"[bold red]❌ Error:[/bold red] {e}")
+                    error_panel = Panel(
+                        f"[bold {THEME_COLORS['error']}]❌ Error:[/bold {THEME_COLORS['error']}] {e}",
+                        border_style=THEME_COLORS['error']
+                    )
+                    console.print(error_panel)
                     if debug:
                         import traceback
-
-                        console.print("[dim]" + traceback.format_exc() + "[/dim]")
+                        console.print(f"[dim {THEME_COLORS['muted']}]{traceback.format_exc()}[/dim {THEME_COLORS['muted']}]")
                     continue
 
-            # Display response
-            print_formatted_text(
-                HTML(f"<ans>🦙 Assistant:</ans>\n{response}\n"), style=CLI_STYLE
+            # Display enhanced response
+            response_panel = Panel(
+                response,
+                title=f"[bold {THEME_COLORS['accent']}]🦙 Llamaball Assistant[/bold {THEME_COLORS['accent']}]",
+                border_style=THEME_COLORS['accent'],
+                padding=(1, 2)
             )
+            console.print(response_panel)
+            console.print()
 
         except KeyboardInterrupt:
-            console.print("\n[dim]👋 Goodbye![/dim]")
+            console.print(f"\n[{THEME_COLORS['muted']}]👋 Goodbye![/{THEME_COLORS['muted']}]")
             break
         except EOFError:
-            console.print("\n[dim]👋 Goodbye![/dim]")
+            console.print(f"\n[{THEME_COLORS['muted']}]👋 Goodbye![/{THEME_COLORS['muted']}]")
             break
 
 
 def show_chat_help():
-    """Show help during chat session"""
-    help_text = """
-[bold]💬 Chat Session Help[/bold]
+    """Show enhanced help during chat session"""
+    help_content = f"""
+[bold {THEME_COLORS['primary']}]💬 Chat Session Help[/bold {THEME_COLORS['primary']}]
 
-[bold]Basic Commands:[/bold]
-• [cyan]exit, quit, q[/cyan] - End the chat session
-• [cyan]help[/cyan] - Show this help message
-• [cyan]stats[/cyan] - Show database statistics
-• [cyan]clear[/cyan] - Clear conversation history
+[bold {THEME_COLORS['success']}]Basic Commands:[/bold {THEME_COLORS['success']}]
+• [bold cyan]exit, quit, q[/bold cyan] - End the chat session
+• [bold cyan]help[/bold cyan] - Show this help message
+• [bold cyan]stats[/bold cyan] - Show database statistics
+• [bold cyan]clear[/bold cyan] - Clear conversation history
 
-[bold]Model & Parameter Commands:[/bold]
-• [cyan]/models[/cyan] - List available models
-• [cyan]/model [name][/cyan] - Switch to a different model
-• [cyan]/temp [0.0-2.0][/cyan] - Change response creativity
-• [cyan]/tokens [1-8192][/cyan] - Change max response length
-• [cyan]/topk [1-20][/cyan] - Change document retrieval count
-• [cyan]/status[/cyan] - Show current settings
-• [cyan]/commands[/cyan] - Show all available commands
+[bold {THEME_COLORS['warning']}]Model & Parameter Commands:[/bold {THEME_COLORS['warning']}]
+• [bold cyan]/models[/bold cyan] - List available models
+• [bold cyan]/model [name][/bold cyan] - Switch to a different model
+• [bold cyan]/temp [0.0-2.0][/bold cyan] - Change response creativity
+• [bold cyan]/tokens [1-8192][/bold cyan] - Change max response length
+• [bold cyan]/topk [1-20][/bold cyan] - Change document retrieval count
+• [bold cyan]/status[/bold cyan] - Show current settings
+• [bold cyan]/commands[/bold cyan] - Show all available commands
 
-[bold]Tips:[/bold]
+[bold {THEME_COLORS['info']}]💡 Tips:[/bold {THEME_COLORS['info']}]
 • Ask specific questions about your documents
 • Use natural language - no special syntax needed
 • Reference specific files or topics for better results
 • The assistant can execute code and run commands if needed
-• Change models on-the-fly with [cyan]/model[/cyan] command
-• Adjust creativity with [cyan]/temp[/cyan] (0.0=focused, 1.0=creative)
+• Change models on-the-fly with [bold cyan]/model[/bold cyan] command
+• Adjust creativity with [bold cyan]/temp[/bold cyan] (0.0=focused, 1.0=creative)
 
-[bold]Shortcuts:[/bold]
-• [cyan]Ctrl+C[/cyan] - End session
-• [cyan]Ctrl+D[/cyan] - End session (Unix/Mac)
+[bold {THEME_COLORS['accent']}]⌨️ Shortcuts:[/bold {THEME_COLORS['accent']}]
+• [bold cyan]Ctrl+C[/bold cyan] - End session
+• [bold cyan]Ctrl+D[/bold cyan] - End session (Unix/Mac)
 """
-    console.print(Panel(help_text, title="Chat Help", border_style="blue"))
+    
+    help_panel = Panel(
+        help_content,
+        title=f"[bold {THEME_COLORS['primary']}]Chat Help[/bold {THEME_COLORS['primary']}]",
+        border_style=THEME_COLORS['primary'],
+        padding=(1, 2)
+    )
+    console.print(help_panel)
 
 
 class ChatSession:
@@ -957,34 +1219,60 @@ class ChatSession:
 
 
 def list_available_models(custom_model=None):
-    """List available models with size information"""
-    from rich.table import Table
-
+    """List available models with enhanced styling"""
     from .core import format_model_size, get_available_models
 
     models = get_available_models(custom_model)
 
     if not models:
-        console.print("[yellow]No models found[/yellow]")
+        no_models_panel = Panel(
+            f"[bold {THEME_COLORS['warning']}]No models found[/bold {THEME_COLORS['warning']}]\n"
+            f"[{THEME_COLORS['muted']}]Make sure Ollama is running and models are installed.[/{THEME_COLORS['muted']}]",
+            border_style=THEME_COLORS['warning'],
+            title="[bold]No Models[/bold]"
+        )
+        console.print(no_models_panel)
         return
 
-    table = Table(
-        title="🤖 Available Models", show_header=True, header_style="bold magenta"
-    )
-    table.add_column("Model Name", style="cyan")
-    table.add_column("Size", style="green")
-    table.add_column("Family", style="blue")
-    table.add_column("Parameters", style="yellow")
-
-    for model in models:
+    if custom_model and len(models) == 1:
+        # Show detailed info for single model
+        model = models[0]
         details = model.get("details", {})
-        family = details.get("family", "unknown")
-        param_size = details.get("parameter_size", "unknown")
-        size_str = format_model_size(model["size"])
+        
+        model_details = f"""[bold {THEME_COLORS['primary']}]Model:[/bold {THEME_COLORS['primary']}] {model['name']}
+[bold {THEME_COLORS['success']}]Size:[/bold {THEME_COLORS['success']}] {format_model_size(model['size'])}
+[bold {THEME_COLORS['info']}]Family:[/bold {THEME_COLORS['info']}] {details.get('family', 'unknown')}
+[bold {THEME_COLORS['accent']}]Parameters:[/bold {THEME_COLORS['accent']}] {details.get('parameter_size', 'unknown')}
+[bold {THEME_COLORS['warning']}]Quantization:[/bold {THEME_COLORS['warning']}] {details.get('quantization_level', 'unknown')}"""
+        
+        model_panel = Panel(
+            model_details,
+            title=f"[bold {THEME_COLORS['primary']}]Model Details[/bold {THEME_COLORS['primary']}]",
+            border_style=THEME_COLORS['primary']
+        )
+        console.print(model_panel)
+    else:
+        table = Table(
+            title=f"[bold {THEME_COLORS['primary']}]🤖 Available Models[/bold {THEME_COLORS['primary']}]",
+            show_header=True,
+            header_style=f"bold {THEME_COLORS['accent']}",
+            border_style=THEME_COLORS['primary']
+        )
+        table.add_column("Model Name", style=f"bold {THEME_COLORS['info']}")
+        table.add_column("Size", style=THEME_COLORS['success'])
+        table.add_column("Family", style=THEME_COLORS['warning'])
+        table.add_column("Parameters", style=THEME_COLORS['accent'])
 
-        table.add_row(model["name"], size_str, family, param_size)
+        for model in models:
+            details = model.get("details", {})
+            family = details.get("family", "unknown")
+            param_size = details.get("parameter_size", "unknown")
+            size_str = format_model_size(model["size"])
 
-    console.print(table)
+            table.add_row(model["name"], size_str, family, param_size)
+
+        console.print(table)
+    
     return models
 
 
