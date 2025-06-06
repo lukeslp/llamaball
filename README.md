@@ -10,21 +10,10 @@ A comprehensive toolkit for document ingestion, embedding generation, and conver
 
 ## ✨ Features
 
-<<<<<<< HEAD
-- **🏠 100% Local Processing**: All data stays on your machine
-- **♿ Accessibility First**: Screen reader support, keyboard navigation, clear structure
-- **🖥️ Rich CLI**: Beautiful terminal interface with progress indicators
-- **📚 Smart Document Parsing**: Intelligent chunking for optimal embeddings with support for PDFs, DOCX, and spreadsheets
-- **🔍 Semantic Search**: Fast vector similarity search
-- **💬 Interactive Chat**: Natural conversations with your documents
-- **📊 Database Management**: Comprehensive statistics and file management
-- **🎛️ Dynamic Model Control**: Change models and parameters during chat
-- **🔧 Developer-Friendly**: Full Python API with type hints
-=======
 - **🏠 100% Local Processing**: All data stays on your machine with no external API calls
 - **🚀 High Performance**: Multi-threaded processing with intelligent caching
 - **🖥️ Rich CLI**: Beautiful terminal interface with real-time progress indicators
-- **📚 Smart Document Parsing**: Advanced chunking algorithms with overlap optimization
+- **📚 Smart Document Parsing**: Advanced chunking algorithms with overlap optimization for 80+ file types
 - **🔍 Semantic Search**: Fast vector similarity search with configurable relevance scoring
 - **💬 Interactive Chat**: Natural conversations with context-aware document retrieval
 - **📊 Database Management**: Comprehensive statistics, analytics, and file management
@@ -35,7 +24,6 @@ A comprehensive toolkit for document ingestion, embedding generation, and conver
 - **🔄 Incremental Updates**: Smart change detection for efficient re-indexing
 - **📈 Performance Monitoring**: Built-in profiling and benchmark tools
 - **🛡️ Error Recovery**: Robust fallback mechanisms and graceful degradation
->>>>>>> main
 
 ## 🚀 Quick Start
 
@@ -303,14 +291,7 @@ results = retriever.search(
 
 ### Configuration File Support
 
-<<<<<<< HEAD
-- **Text**: `.txt`, `.md`, `.rst`
-- **Code**: `.py`, `.js`, `.html`, `.css`, `.json`
-- **Data**: `.csv`, `.tsv`, `.xlsx`, `.xls`
-- **Documents**: `.pdf`, `.docx`
-=======
 Create `.llamaball.yaml` in your project directory:
->>>>>>> main
 
 ```yaml
 # Performance Configuration
@@ -349,18 +330,22 @@ output:
 
 ### Supported File Types & Processing
 
-- **Text Documents**: `.txt`, `.md`, `.rst`, `.tex`
-- **Source Code**: `.py`, `.js`, `.ts`, `.html`, `.css`, `.json`, `.xml`, `.yaml`
-- **Data Files**: `.csv`, `.tsv`, `.jsonl`, `.parquet`
-- **Documentation**: `.pdf` (with PyPDF2), `.docx` (with python-docx)
-- **Specialized**: `.ipynb` (Jupyter notebooks), `.org` (Org-mode)
+- **Text Documents**: `.txt`, `.md`, `.rst`, `.tex`, `.org`, `.adoc`, `.wiki`, `.markdown`, `.mdown`, `.mkd`, `.text`, `.asc`
+- **Source Code**: `.py`, `.js`, `.ts`, `.jsx`, `.tsx`, `.html`, `.htm`, `.css`, `.json`, `.xml`, `.yaml`, `.yml`, `.toml`, `.ini`, `.cfg`, `.sql`, `.sh`, `.bash`, `.zsh`, `.fish`, `.ps1`, `.bat`, `.php`, `.rb`, `.go`, `.rs`, `.cpp`, `.c`, `.h`, `.hpp`, `.java`, `.scala`, `.kt`, `.swift`, `.dart`, `.r`, `.m`, `.pl`, `.lua`, `.vim`, `.dockerfile`, `.makefile`
+- **Documents**: `.pdf` (with pdfminer.six), `.docx`, `.doc` (with python-docx)
+- **Data Files**: `.csv`, `.tsv`, `.jsonl`, `.ndjson`, `.log`
+- **Spreadsheets**: `.xlsx`, `.xls`, `.xlsm` (with openpyxl/xlrd)
+- **Notebooks**: `.ipynb` (Jupyter notebooks with full cell parsing)
 
 #### Advanced Processing Features
-- **Intelligent Chunking**: Semantic boundary detection
-- **Code-Aware Parsing**: Function and class boundary respect
-- **Metadata Extraction**: File type, creation date, size analysis
-- **Content Deduplication**: Hash-based duplicate detection
-- **Language Detection**: Automatic language identification
+- **Intelligent Chunking**: Semantic boundary detection with configurable overlap
+- **Code-Aware Parsing**: Function and class boundary respect for source code
+- **Metadata Extraction**: File type, creation date, size analysis, encoding detection
+- **Content Deduplication**: Hash-based duplicate detection and change tracking
+- **Language Detection**: Automatic encoding detection with fallback support
+- **Error Recovery**: Graceful handling of corrupted or partially readable files
+- **Memory Optimization**: Streaming processing for large files with efficient buffering
+- **Parallel Processing**: Multi-threaded file parsing with configurable worker pools
 
 ## 🔧 Performance Optimization
 
@@ -587,8 +572,7 @@ llamaball/
 
 ---
 
-<<<<<<< HEAD
-**🎯 Mission**: Build the most accessible, privacy-focused document chat system available, empowering users with local AI while maintaining the highest standards of usability and technical excellence.
+**🎯 Mission**: Build the highest-performance, privacy-focused document chat system available, empowering users with local AI while maintaining excellence in usability, security, and technical innovation.
 
 ---
 
@@ -599,6 +583,3 @@ Tip jar: <https://usefulai.lemonsqueezy.com/buy/bf6ce1bd-85f5-4a09-ba10-191a670f
 Substack: <https://lukesteuber.substack.com/>
 GitHub: [lukeslp](https://github.com/lukeslp)
 Contact: <luke@lukesteuber.com> · [LinkedIn](https://www.linkedin.com/in/lukesteuber/)
-=======
-**🎯 Mission**: Build the highest-performance, privacy-focused document chat system available, empowering users with local AI while maintaining excellence in usability, security, and technical innovation.
->>>>>>> main

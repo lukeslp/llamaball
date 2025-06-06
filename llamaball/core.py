@@ -1,5 +1,11 @@
-import csv
-import json
+"""
+Llamaball - Core RAG Functionality
+File Purpose: Core RAG system with comprehensive file parsing and performance optimization
+Primary Functions: Document ingestion, embedding generation, semantic search, chat
+Inputs: Files, queries, chat messages
+Outputs: Embeddings, search results, chat responses
+"""
+
 import logging
 import os
 import re
@@ -8,19 +14,17 @@ import subprocess
 import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict, Union
+from pathlib import Path
 
 import numpy as np
 import ollama
 import requests
 import tiktoken
-import xlrd
-from docx import Document
 from numpy.linalg import norm
-from openpyxl import load_workbook
-from pdfminer.high_level import extract_text
 
 from .utils import render_markdown_to_html
+from .parsers import FileParser, is_supported_file, get_supported_extensions
 
 # Logging setup
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -34,42 +38,8 @@ DEFAULT_CHAT_MODEL = os.environ.get("CHAT_MODEL", "llama3.2:1b")
 MAX_CHUNK_SIZE = 32000
 OLLAMA_ENDPOINT = os.environ.get("OLLAMA_ENDPOINT", "http://localhost:11434")
 
-FILE_LOADERS = {
-    ".txt": lambda p: open(p, "r", encoding="utf-8").read(),
-    ".md": lambda p: open(p, "r", encoding="utf-8").read(),
-    ".py": lambda p: open(p, "r", encoding="utf-8").read(),
-    ".json": lambda p: json.dumps(json.load(open(p, "r", encoding="utf-8")), indent=2),
-    ".csv": lambda p: "\n".join(
-        [", ".join(row) for row in csv.reader(open(p, "r", encoding="utf-8"))]
-    ),
-    ".tsv": lambda p: "\n".join(
-        [
-            "\t".join(row)
-            for row in csv.reader(open(p, "r", encoding="utf-8"), delimiter="\t")
-        ]
-    ),
-    ".pdf": lambda p: extract_text(
-        p
-    ),  # https://pdfminersix.readthedocs.io/en/latest/tutorial/composable.html#extract-text
-    ".docx": lambda p: "\n".join(
-        [para.text for para in Document(p).paragraphs]
-    ),  # https://python-docx.readthedocs.io/en/latest/
-    ".xlsx": lambda p: "\n".join(
-        [
-            ", ".join([str(cell) if cell is not None else "" for cell in row])
-            for sheet in load_workbook(p, data_only=True).worksheets
-            for row in sheet.iter_rows(values_only=True)
-        ]
-    ),
-    ".xls": lambda p: "\n".join(
-        [
-            ", ".join(
-                [str(cell.value) if cell.value is not None else "" for cell in row]
-            )
-            for row in xlrd.open_workbook(p).sheet_by_index(0).get_rows()
-        ]
-    ),
-}
+# Initialize file parser
+file_parser = FileParser()
 
 SYSTEM_PROMPT = (
     "You are an assistant that identifies the most feature-complete and robust version of code files "
@@ -175,10 +145,20 @@ def ingest_files(
     provider: str,
     recursive: bool,
     exclude_patterns: Optional[List[str]] = None,
-) -> None:
+    force: bool = False,
+) -> Dict[str, Union[int, List[str]]]:
     """
-    Ingest files with plugin loaders, chunk by token boundaries,
+    Ingest files with comprehensive parsing, chunk by token boundaries,
     skip unchanged files, and enqueue embedding tasks.
+    
+    Returns:
+        Dictionary with statistics about ingestion process
+        
+    Performance:
+        - Multi-threaded embedding generation
+        - Intelligent file change detection
+        - Memory-efficient chunking
+        - Comprehensive error handling
     """
     import fnmatch
 
@@ -192,7 +172,20 @@ def ingest_files(
     c = conn.cursor()
     encoder = tiktoken.get_encoding("cl100k_base")
     logger.info(f"Using 'cl100k_base' tokenizer for model {model_name}")
+    
+    # Statistics tracking
+    stats = {
+        'processed_files': 0,
+        'skipped_files': 0,
+        'error_files': 0,
+        'total_chunks': 0,
+        'supported_extensions': list(get_supported_extensions()),
+        'processed_extensions': set(),
+        'error_messages': []
+    }
+    
     embed_tasks = []
+    
     for root, dirs, files in walker:
         for fname in files:
             path = os.path.join(root, fname)
@@ -204,51 +197,106 @@ def ingest_files(
                 for pattern in exclude_patterns
             ):
                 logger.debug(f"Excluding file: {rel_path}")
+                stats['skipped_files'] += 1
                 continue
 
-            ext = os.path.splitext(fname)[1].lower()
-            loader = FILE_LOADERS.get(ext)
-            if not loader or not os.path.isfile(path):
-                logger.debug(f"Skipping unsupported or non-file: {rel_path}")
+            # Check if file type is supported
+            if not is_supported_file(path):
+                logger.debug(f"Skipping unsupported file type: {rel_path}")
+                stats['skipped_files'] += 1
                 continue
-            mtime = os.path.getmtime(path)
-            c.execute("SELECT mtime FROM files WHERE filename = ?", (rel_path,))
-            row = c.fetchone()
-            if row and row[0] == mtime:
-                logger.info(f"Skipping unchanged file: {rel_path}")
+                
+            if not os.path.isfile(path):
+                logger.debug(f"Skipping non-file: {rel_path}")
+                stats['skipped_files'] += 1
                 continue
+                
+            # Check if file has changed (unless force mode)
+            if not force:
+                mtime = os.path.getmtime(path)
+                c.execute("SELECT mtime FROM files WHERE filename = ?", (rel_path,))
+                row = c.fetchone()
+                if row and row[0] == mtime:
+                    logger.info(f"Skipping unchanged file: {rel_path}")
+                    stats['skipped_files'] += 1
+                    continue
+            
+            # Parse file content
             try:
-                content = loader(path).strip()
+                parse_result = file_parser.parse_file(path)
+                
+                if parse_result['error']:
+                    logger.warning(f"Error parsing {rel_path}: {parse_result['error']}")
+                    stats['error_files'] += 1
+                    stats['error_messages'].append(f"{rel_path}: {parse_result['error']}")
+                    continue
+                
+                content = parse_result['content'].strip()
+                if not content:
+                    logger.debug(f"Empty content for {rel_path}")
+                    stats['skipped_files'] += 1
+                    continue
+                    
+                # Track file extension
+                ext = Path(path).suffix.lower()
+                stats['processed_extensions'].add(ext)
+                    
             except Exception as e:
                 logger.warning(f"Error loading {rel_path}: {e}")
+                stats['error_files'] += 1
+                stats['error_messages'].append(f"{rel_path}: {str(e)}")
                 continue
-            if not content:
-                continue
+            
+            # Chunk content by token boundaries
             paragraphs = re.split(r"\n\s*\n", content)
             token_buffer = []
+            chunk_count = 0
+            
             for para in paragraphs:
                 para_tokens = encoder.encode(para, disallowed_special=())
                 if len(token_buffer) + len(para_tokens) > MAX_TOKENS:
-                    text_chunk = encoder.decode(token_buffer)
-                    _insert_chunk(c, rel_path, len(embed_tasks), text_chunk)
-                    embed_tasks.append((rel_path, text_chunk))
+                    if token_buffer:  # Only create chunk if buffer has content
+                        text_chunk = encoder.decode(token_buffer)
+                        _insert_chunk(c, rel_path, chunk_count, text_chunk)
+                        embed_tasks.append((rel_path, text_chunk, chunk_count))
+                        chunk_count += 1
+                        stats['total_chunks'] += 1
                     token_buffer = para_tokens
                 else:
                     token_buffer += para_tokens
+            
+            # Handle remaining buffer
             if token_buffer:
                 text_chunk = encoder.decode(token_buffer)
-                _insert_chunk(c, rel_path, len(embed_tasks), text_chunk)
-                embed_tasks.append((rel_path, text_chunk))
+                _insert_chunk(c, rel_path, chunk_count, text_chunk)
+                embed_tasks.append((rel_path, text_chunk, chunk_count))
+                stats['total_chunks'] += 1
+            
+            # Update file modification time
+            mtime = os.path.getmtime(path)
             c.execute(
                 "INSERT OR REPLACE INTO files (filename, mtime) VALUES (?, ?)",
                 (rel_path, mtime),
             )
             conn.commit()
+            
+            stats['processed_files'] += 1
+            logger.info(f"Processed {rel_path} -> {chunk_count + 1 if token_buffer else chunk_count} chunks")
+    
     conn.close()
-    logger.info(f"Queued {len(embed_tasks)} chunks for embedding")
+    
+    # Convert processed_extensions set to list for JSON serialization
+    stats['processed_extensions'] = list(stats['processed_extensions'])
+    
+    logger.info(f"Queued {len(embed_tasks)} chunks for embedding from {stats['processed_files']} files")
+    logger.info(f"Processed file types: {', '.join(stats['processed_extensions'])}")
+    
+    if stats['error_files'] > 0:
+        logger.warning(f"Encountered errors in {stats['error_files']} files")
 
+    # Parallel embedding generation
     def embed_worker(task):
-        rel_path, chunk = task
+        rel_path, chunk, chunk_idx = task
         conn_thread = sqlite3.connect(db_path, check_same_thread=False)
         c_thread = conn_thread.cursor()
         c_thread.execute(
@@ -257,6 +305,7 @@ def ingest_files(
         )
         row = c_thread.fetchone()
         if not row:
+            conn_thread.close()
             return
         doc_id = row[0]
         try:
@@ -267,14 +316,21 @@ def ingest_files(
                 (doc_id, emb_blob),
             )
             conn_thread.commit()
-            logger.info(f"Embedded {rel_path} (doc_id={doc_id})")
+            logger.debug(f"Embedded {rel_path} chunk {chunk_idx} (doc_id={doc_id})")
         except Exception as e:
-            logger.error(f"Error embedding {rel_path}: {e}")
+            logger.error(f"Error embedding {rel_path} chunk {chunk_idx}: {e}")
+            stats['error_messages'].append(f"Embedding {rel_path} chunk {chunk_idx}: {str(e)}")
         finally:
             conn_thread.close()
 
-    with ThreadPoolExecutor(max_workers=5) as pool:
+    # Use ThreadPoolExecutor for parallel embedding
+    max_workers = min(8, len(embed_tasks)) if embed_tasks else 1
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
         list(pool.map(embed_worker, embed_tasks))
+    
+    logger.info(f"Ingestion complete: {stats['processed_files']} files, {stats['total_chunks']} chunks")
+    
+    return stats
 
 
 def search_embeddings(

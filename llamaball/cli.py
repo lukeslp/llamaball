@@ -124,6 +124,9 @@ def ingest_command(
         False, "--force", "-f", help="Force re-indexing of all files"
     ),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress progress output"),
+    show_types: bool = typer.Option(
+        False, "--show-types", "-t", help="Show supported file types and exit"
+    ),
 ):
     """
     📚 Ingest documents and build embeddings database.
@@ -131,14 +134,55 @@ def ingest_command(
     This command scans the specified directory, extracts text from supported files,
     chunks the content intelligently, and creates embeddings for semantic search.
 
-    Supported file types: .txt, .md, .py, .json, .csv
+    Supported file types include:
+    • Text: .txt, .md, .rst, .tex, .org, .wiki, etc.
+    • Code: .py, .js, .ts, .html, .css, .json, .yaml, .sql, etc.
+    • Documents: .pdf, .docx, .doc
+    • Data: .csv, .tsv, .xlsx, .xls, .jsonl
+    • Spreadsheets: .xlsx, .xls, .ods
+    • Notebooks: .ipynb (Jupyter notebooks)
 
     Examples:
       llamaball ingest                    # Ingest current directory
       llamaball ingest ./docs -r          # Recursively ingest docs/
       llamaball ingest ~/papers -m qwen3  # Use different model
       llamaball ingest . --exclude "*.log,temp*"  # Exclude patterns
+      llamaball ingest --show-types       # Show all supported file types
     """
+    # Show supported file types if requested
+    if show_types:
+        from .parsers import FileParser
+        parser = FileParser()
+        
+        console.print("[bold]🗂️  Supported File Types:[/bold]\n")
+        
+        # Create table of supported types
+        table = Table(title="File Type Support", show_header=True, header_style="bold magenta")
+        table.add_column("Category", style="cyan", width=12)
+        table.add_column("Extensions", style="green")
+        table.add_column("Description", style="dim")
+        
+        categories = [
+            ("Text", parser.TEXT_EXTENSIONS, "Plain text, markdown, documentation"),
+            ("Code", parser.CODE_EXTENSIONS, "Source code, configuration files"),
+            ("Documents", parser.DOCUMENT_EXTENSIONS, "PDF, Word documents"),
+            ("Data", parser.DATA_EXTENSIONS, "CSV, TSV, JSON lines"),
+            ("Spreadsheets", parser.SPREADSHEET_EXTENSIONS, "Excel, OpenDocument"),
+            ("Notebooks", parser.NOTEBOOK_EXTENSIONS, "Jupyter notebooks"),
+        ]
+        
+        for category, extensions, description in categories:
+            ext_list = ", ".join(sorted(extensions))
+            if len(ext_list) > 60:
+                ext_list = ext_list[:57] + "..."
+            table.add_row(category, ext_list, description)
+        
+        console.print(table)
+        
+        total_types = sum(len(exts) for _, exts, _ in categories)
+        console.print(f"\n[bold green]Total supported file types: {total_types}[/bold green]")
+        return
+
     # Use current directory if none specified
     if directory is None:
         directory = "."
@@ -173,29 +217,42 @@ def ingest_command(
         console.print(f"🗄️  Database: [cyan]{db}[/cyan]")
         console.print(f"🤖 Model: [cyan]{model}[/cyan]")
         console.print(f"🔄 Recursive: [cyan]{recursive}[/cyan]")
+        console.print(f"⚡ Force reindex: [cyan]{force}[/cyan]")
         console.print(f"🚫 Exclude: [cyan]{exclude if exclude else 'none'}[/cyan]")
         console.print()
 
     try:
         if not quiet:
             with console.status("🔍 Processing documents..."):
-                core.ingest_files(
-                    directory, db, model, provider, recursive, exclude_patterns
+                stats = core.ingest_files(
+                    directory, db, model, provider, recursive, exclude_patterns, force
                 )
         else:
-            core.ingest_files(
-                directory, db, model, provider, recursive, exclude_patterns
+            stats = core.ingest_files(
+                directory, db, model, provider, recursive, exclude_patterns, force
             )
 
         if not quiet:
             console.print(
                 "[bold green]✅ Ingestion completed successfully![/bold green]"
             )
-            # Show quick stats
-            stats_info = get_db_stats(db)
-            console.print(
-                f"📊 Indexed {stats_info['docs']} documents with {stats_info['embeddings']} embeddings"
-            )
+            
+            # Show comprehensive statistics
+            console.print(f"\n[bold]📊 Ingestion Results:[/bold]")
+            console.print(f"✅ Processed: [green]{stats['processed_files']}[/green] files")
+            console.print(f"⏭️  Skipped: [yellow]{stats['skipped_files']}[/yellow] files")
+            console.print(f"❌ Errors: [red]{stats['error_files']}[/red] files")
+            console.print(f"📄 Total chunks: [cyan]{stats['total_chunks']}[/cyan]")
+            
+            if stats['processed_extensions']:
+                console.print(f"🗂️  File types: [dim]{', '.join(sorted(stats['processed_extensions']))}[/dim]")
+            
+            if stats['error_files'] > 0:
+                console.print(f"\n[bold red]❌ Error Details:[/bold red]")
+                for error in stats['error_messages'][:5]:  # Show first 5 errors
+                    console.print(f"  • {error}")
+                if len(stats['error_messages']) > 5:
+                    console.print(f"  ... and {len(stats['error_messages']) - 5} more errors")
 
     except Exception as e:
         console.print(f"[bold red]❌ Ingestion failed:[/bold red] {e}")
