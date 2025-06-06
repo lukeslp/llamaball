@@ -96,6 +96,7 @@ llamaball/
 - [x] **File Listing**: Searchable and sortable file inventory
 - [x] **Database Clearing**: Safe deletion with backup options
 - [x] **Multiple Formats**: Table, JSON, and plain text output
+- [x] **Additional File Types**: PDF, DOCX, XLS, and XLSX ingestion
 
 ### ♿ Accessibility Features
 - [x] **Screen Reader Support**: Semantic markup throughout

@@ -13,7 +13,7 @@ A comprehensive toolkit for document ingestion, embedding generation, and conver
 - **🏠 100% Local Processing**: All data stays on your machine
 - **♿ Accessibility First**: Screen reader support, keyboard navigation, clear structure
 - **🖥️ Rich CLI**: Beautiful terminal interface with progress indicators
-- **📚 Smart Document Parsing**: Intelligent chunking for optimal embeddings
+- **📚 Smart Document Parsing**: Intelligent chunking for optimal embeddings with support for PDFs, DOCX, and spreadsheets
 - **🔍 Semantic Search**: Fast vector similarity search
 - **💬 Interactive Chat**: Natural conversations with your documents
 - **📊 Database Management**: Comprehensive statistics and file management
@@ -155,8 +155,8 @@ print(f"Total documents: {stats['total_files']}")
 
 - **Text**: `.txt`, `.md`, `.rst`
 - **Code**: `.py`, `.js`, `.html`, `.css`, `.json`
-- **Data**: `.csv`, `.tsv`
-- **Documents**: `.pdf` (planned)
+- **Data**: `.csv`, `.tsv`, `.xlsx`, `.xls`
+- **Documents**: `.pdf`, `.docx`
 
 ## ♿ Accessibility Features
 
@@ -260,3 +260,13 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ---
 
 **🎯 Mission**: Build the most accessible, privacy-focused document chat system available, empowering users with local AI while maintaining the highest standards of usability and technical excellence.
+
+---
+
+**About the Author**
+
+Project by [Luke Steuber](https://lukesteuber.com) (<https://assisted.site/>).
+Tip jar: <https://usefulai.lemonsqueezy.com/buy/bf6ce1bd-85f5-4a09-ba10-191a670f74af>
+Substack: <https://lukesteuber.substack.com/>
+GitHub: [lukeslp](https://github.com/lukeslp)
+Contact: <luke@lukesteuber.com> · [LinkedIn](https://www.linkedin.com/in/lukesteuber/)
