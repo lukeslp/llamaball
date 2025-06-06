@@ -1,19 +1,22 @@
 #!/bin/bash
-# PyPI Upload Script for llamaball v1.0.0
+# PyPI Upload Script for llamaball
 
 set -e
+
+# Extract version from __init__.py
+VERSION=$(grep -o '__version__ = "[^"]*"' llamaball/__init__.py | cut -d'"' -f2)
 
 echo "🦙 Llamaball PyPI Upload"
 echo "======================="
 
 # Check if dist files exist
-if [ ! -f "dist/llamaball-1.0.0-py3-none-any.whl" ] || [ ! -f "dist/llamaball-1.0.0.tar.gz" ]; then
+if [ ! -f "dist/llamaball-$VERSION-py3-none-any.whl" ] || [ ! -f "dist/llamaball-$VERSION.tar.gz" ]; then
     echo "❌ Error: Distribution files not found. Run 'python -m build' first."
     exit 1
 fi
 
 echo "📦 Found distribution files:"
-ls -la dist/llamaball-1.0.0*
+ls -la dist/llamaball-$VERSION*
 
 echo ""
 echo "🔑 PyPI Authentication"
@@ -49,7 +52,7 @@ echo ""
 echo "🚀 Uploading to PyPI..."
 
 # Upload using the temporary .pypirc file
-python -m twine upload --config-file "$PYPIRC_FILE" dist/llamaball-1.0.0*
+python -m twine upload --config-file "$PYPIRC_FILE" dist/llamaball-$VERSION*
 
 # Clean up
 rm -f "$PYPIRC_FILE"
