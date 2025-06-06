@@ -1,4 +1,7 @@
-# DocChatAI – Qwen3 4B configuration
+# Llamaball DocChatAI – Qwen3 4B configuration
+# Created by Luke Steuber - lukesteuber.com | assisted.site
+# MIT License - Copyright (c) 2025 Luke Steuber
+
 FROM qwen3:4b
 
 # Prompt template (Llama-/Gemma-3 chat style)
@@ -32,7 +35,12 @@ PARAMETER stop "<|end_header_id|>"
 PARAMETER stop "<|eot_id|>"
 PARAMETER stop "<|reserved_special_token|>"
 
-# (Optional) license – inherit upstream Qwen3 license
+# MIT License - Created by Luke Steuber
 LICENSE """
-This derivative configuration inherits the license of the upstream Qwen3 model.
+This Llamaball model configuration is MIT Licensed by Luke Steuber (lukesteuber.com).
+The underlying Qwen3 model retains its original license terms.
+
+Contact: luke@lukesteuber.com
+Support: https://usefulai.lemonsqueezy.com/buy/bf6ce1bd-85f5-4a09-ba10-191a670f74af
+GitHub: @lukeslp | Ollama: coolhand
 """ 

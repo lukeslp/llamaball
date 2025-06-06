@@ -541,6 +541,9 @@ llamaball/
 - **Support**: [Tip Jar](https://usefulai.lemonsqueezy.com/buy/bf6ce1bd-85f5-4a09-ba10-191a670f74af)
 - **Newsletter**: [lukesteuber.substack.com](https://lukesteuber.substack.com/)
 - **Code**: [GitHub @lukeslp](https://github.com/lukeslp)
+- **Models**: [Ollama coolhand](https://ollama.com/coolhand)
+- **Pip**: [lukesteuber](https://pypi.org/user/lukesteuber/)
+
 
 ## 🙏 Acknowledgments & Technology Stack
 
