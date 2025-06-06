@@ -179,7 +179,7 @@ class FileParser:
         return result
     
     def _parse_pdf(self, file_path: Path) -> Dict[str, Union[str, Dict]]:
-        """Parse PDF files using pdfminer."""
+        """Parse PDF files using pdfminer with robust error handling."""
         if not PDF_AVAILABLE:
             return {
                 'content': '',
@@ -187,7 +187,7 @@ class FileParser:
             }
         
         try:
-            # Extract text with optimized settings
+            # Extract text with optimized settings and error recovery
             content = pdf_extract_text(
                 str(file_path),
                 maxpages=0,  # Process all pages
@@ -198,15 +198,44 @@ class FileParser:
             # Clean up extracted text
             content = self._clean_text(content)
             
+            # Handle empty content
+            if not content or len(content.strip()) < 10:
+                return {
+                    'content': '',
+                    'error': 'PDF appears to be empty or contains only images/scanned content'
+                }
+            
             return {
                 'content': content,
                 'metadata': {'pages': content.count('\f') + 1 if content else 0}
             }
             
         except PDFSyntaxError as e:
-            return {'content': '', 'error': f'PDF syntax error: {e}'}
+            error_msg = str(e)
+            if "No /Root object" in error_msg:
+                return {
+                    'content': '', 
+                    'error': 'PDF file appears to be corrupted or not a valid PDF'
+                }
+            return {'content': '', 'error': f'PDF syntax error: {error_msg}'}
         except Exception as e:
-            return {'content': '', 'error': f'PDF parsing error: {e}'}
+            error_msg = str(e)
+            if "No /Root object" in error_msg:
+                return {
+                    'content': '', 
+                    'error': 'PDF file appears to be corrupted or not a valid PDF'
+                }
+            elif "password" in error_msg.lower():
+                return {
+                    'content': '', 
+                    'error': 'PDF is password protected'
+                }
+            elif "encrypted" in error_msg.lower():
+                return {
+                    'content': '', 
+                    'error': 'PDF is encrypted and cannot be parsed'
+                }
+            return {'content': '', 'error': f'PDF parsing error: {error_msg}'}
     
     def _parse_docx(self, file_path: Path) -> Dict[str, Union[str, Dict]]:
         """Parse DOCX files using python-docx."""

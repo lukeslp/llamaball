@@ -214,7 +214,7 @@ llamaball/
 ## 🔧 Current Configuration
 
 ### Performance Settings
-- **Database**: `.clai.db` (SQLite with optimization)
+- **Database**: `.llamaball.db` (SQLite with optimization)
 - **Embedding Model**: `nomic-embed-text:latest` (standardized)
 - **Chat Model**: `llama3.2:1b` (configurable via CHAT_MODEL)
 - **Provider**: `ollama` (local inference with hot-swapping)

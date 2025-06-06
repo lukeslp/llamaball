@@ -66,7 +66,7 @@ Ingest documents and build embeddings database.
 **Options:**
 | Flag | Short | Description | Default |
 |------|-------|-------------|---------|
-| `--database` | `-d` | SQLite database path | `.clai.db` |
+| `--database` | `-d` | SQLite database path | `.llamaball.db` |
 | `--model` | `-m` | Embedding model name | `nomic-embed-text:latest` |
 | `--provider` | `-p` | Provider (ollama/openai) | `ollama` |
 | `--recursive` | `-r` | Recursively scan subdirectories | `False` |
@@ -91,7 +91,7 @@ Start interactive chat with your documents.
 **Options:**
 | Flag | Short | Description | Default |
 |------|-------|-------------|---------|
-| `--database` | `-d` | SQLite database path | `.clai.db` |
+| `--database` | `-d` | SQLite database path | `.llamaball.db` |
 | `--model` | `-m` | Embedding model | `nomic-embed-text:latest` |
 | `--provider` | `-p` | Provider (ollama/openai) | `ollama` |
 | `--chat-model` | `-c` | Chat model name | `llama3.2:1b` |
@@ -124,7 +124,7 @@ Show database statistics and information.
 **Options:**
 | Flag | Short | Description | Default |
 |------|-------|-------------|---------|
-| `--database` | `-d` | SQLite database path | `.clai.db` |
+| `--database` | `-d` | SQLite database path | `.llamaball.db` |
 | `--verbose` | `-v` | Show detailed statistics | `False` |
 | `--format` | `-f` | Output format: table, json, plain | `table` |
 
@@ -142,7 +142,7 @@ List all files in the database.
 **Options:**
 | Flag | Short | Description | Default |
 |------|-------|-------------|---------|
-| `--database` | `-d` | SQLite database path | `.clai.db` |
+| `--database` | `-d` | SQLite database path | `.llamaball.db` |
 | `--filter` | `-f` | Filter files by pattern | `` |
 | `--sort` | `-s` | Sort by: name, date, size | `name` |
 | `--limit` | `-l` | Limit results (0 = no limit) | `0` |
@@ -161,7 +161,7 @@ Clear the database (delete all data).
 **Options:**
 | Flag | Short | Description | Default |
 |------|-------|-------------|---------|
-| `--database` | `-d` | SQLite database path | `.clai.db` |
+| `--database` | `-d` | SQLite database path | `.llamaball.db` |
 | `--force` | `-f` | Skip confirmation prompt | `False` |
 | `--backup/--no-backup` | `-b` | Create backup before clearing | `True` |
 
@@ -180,7 +180,7 @@ from llamaball import core
 # Ingest files
 core.ingest_files(
     directory=".",
-    db_path=".clai.db",
+    db_path=".llamaball.db",
     model_name="nomic-embed-text:latest",
     provider="ollama",
     recursive=True
@@ -188,7 +188,7 @@ core.ingest_files(
 
 # Search embeddings
 results = core.search_embeddings(
-    db_path=".clai.db",
+    db_path=".llamaball.db",
     query="your search query",
     model_name="nomic-embed-text:latest",
     provider="ollama",
@@ -197,7 +197,7 @@ results = core.search_embeddings(
 
 # Chat with documents
 response = core.chat(
-    db_path=".clai.db",
+    db_path=".llamaball.db",
     embed_model="nomic-embed-text:latest",
     provider="ollama",
     chat_model="llama3.2:1b",

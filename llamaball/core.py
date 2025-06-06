@@ -31,7 +31,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger(__name__)
 
 MAX_TOKENS = 8191
-DEFAULT_DB_PATH = ".clai.db"
+DEFAULT_DB_PATH = ".llamaball.db"
 DEFAULT_MODEL_NAME = "nomic-embed-text:latest"
 DEFAULT_PROVIDER = "ollama"
 DEFAULT_CHAT_MODEL = os.environ.get("CHAT_MODEL", "llama3.2:1b")
@@ -226,10 +226,27 @@ def ingest_files(
                 parse_result = file_parser.parse_file(path)
                 
                 if parse_result['error']:
-                    logger.warning(f"Error parsing {rel_path}: {parse_result['error']}")
-                    stats['error_files'] += 1
-                    stats['error_messages'].append(f"{rel_path}: {parse_result['error']}")
-                    continue
+                    error_msg = parse_result['error']
+                    # Categorize errors for better user experience
+                    if "not available" in error_msg and "Install with:" in error_msg:
+                        logger.info(f"Optional dependency missing for {rel_path}: {error_msg}")
+                        stats['skipped_files'] += 1
+                        continue
+                    elif "corrupted" in error_msg or "not a valid" in error_msg:
+                        logger.warning(f"Corrupted file {rel_path}: {error_msg}")
+                        stats['error_files'] += 1
+                        stats['error_messages'].append(f"{rel_path}: {error_msg}")
+                        continue
+                    elif "password protected" in error_msg or "encrypted" in error_msg:
+                        logger.warning(f"Protected file {rel_path}: {error_msg}")
+                        stats['error_files'] += 1
+                        stats['error_messages'].append(f"{rel_path}: {error_msg}")
+                        continue
+                    else:
+                        logger.warning(f"Error parsing {rel_path}: {error_msg}")
+                        stats['error_files'] += 1
+                        stats['error_messages'].append(f"{rel_path}: {error_msg}")
+                        continue
                 
                 content = parse_result['content'].strip()
                 if not content:
@@ -242,9 +259,9 @@ def ingest_files(
                 stats['processed_extensions'].add(ext)
                     
             except Exception as e:
-                logger.warning(f"Error loading {rel_path}: {e}")
+                logger.warning(f"Unexpected error loading {rel_path}: {e}")
                 stats['error_files'] += 1
-                stats['error_messages'].append(f"{rel_path}: {str(e)}")
+                stats['error_messages'].append(f"{rel_path}: Unexpected error - {str(e)}")
                 continue
             
             # Chunk content by token boundaries

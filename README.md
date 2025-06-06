@@ -282,7 +282,7 @@ results = retriever.search(
 - `CHAT_MODEL`: Default chat model (default: `llama3.2:1b`)
 - `EMBEDDING_MODEL`: Embedding model (default: `nomic-embed-text`)
 - `OLLAMA_ENDPOINT`: Ollama server endpoint (default: `http://localhost:11434`)
-- `LLAMABALL_DB`: Database path (default: `.clai.db`)
+- `LLAMABALL_DB`: Database path (default: `.llamaball.db`)
 - `LLAMABALL_LOG_LEVEL`: Logging level (default: `INFO`)
 - `LLAMABALL_CACHE_SIZE`: Embedding cache size in MB (default: `512`)
 - `LLAMABALL_WORKERS`: Parallel processing workers (default: `4`)

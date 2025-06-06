@@ -248,11 +248,53 @@ def ingest_command(
                 console.print(f"🗂️  File types: [dim]{', '.join(sorted(stats['processed_extensions']))}[/dim]")
             
             if stats['error_files'] > 0:
-                console.print(f"\n[bold red]❌ Error Details:[/bold red]")
-                for error in stats['error_messages'][:5]:  # Show first 5 errors
-                    console.print(f"  • {error}")
-                if len(stats['error_messages']) > 5:
-                    console.print(f"  ... and {len(stats['error_messages']) - 5} more errors")
+                console.print(f"\n[bold yellow]⚠️  Issues Encountered:[/bold yellow]")
+                
+                # Categorize errors for better display
+                dependency_errors = []
+                corruption_errors = []
+                protection_errors = []
+                other_errors = []
+                
+                for error in stats['error_messages']:
+                    if "not available" in error and "Install with:" in error:
+                        dependency_errors.append(error)
+                    elif "corrupted" in error or "not a valid" in error:
+                        corruption_errors.append(error)
+                    elif "password protected" in error or "encrypted" in error:
+                        protection_errors.append(error)
+                    else:
+                        other_errors.append(error)
+                
+                if dependency_errors:
+                    console.print(f"[bold blue]📦 Missing Dependencies ({len(dependency_errors)} files):[/bold blue]")
+                    console.print("  To enable these file types, install: [cyan]pip install llamaball[files][/cyan]")
+                    for error in dependency_errors[:3]:  # Show first 3
+                        file_name = error.split(":")[0]
+                        console.print(f"  • {file_name}")
+                    if len(dependency_errors) > 3:
+                        console.print(f"  ... and {len(dependency_errors) - 3} more files")
+                
+                if corruption_errors:
+                    console.print(f"[bold red]🗂️  Corrupted Files ({len(corruption_errors)} files):[/bold red]")
+                    for error in corruption_errors[:3]:
+                        console.print(f"  • {error}")
+                    if len(corruption_errors) > 3:
+                        console.print(f"  ... and {len(corruption_errors) - 3} more files")
+                
+                if protection_errors:
+                    console.print(f"[bold yellow]🔒 Protected Files ({len(protection_errors)} files):[/bold yellow]")
+                    for error in protection_errors[:3]:
+                        console.print(f"  • {error}")
+                    if len(protection_errors) > 3:
+                        console.print(f"  ... and {len(protection_errors) - 3} more files")
+                
+                if other_errors:
+                    console.print(f"[bold red]❌ Other Errors ({len(other_errors)} files):[/bold red]")
+                    for error in other_errors[:3]:
+                        console.print(f"  • {error}")
+                    if len(other_errors) > 3:
+                        console.print(f"  ... and {len(other_errors) - 3} more files")
 
     except Exception as e:
         console.print(f"[bold red]❌ Ingestion failed:[/bold red] {e}")

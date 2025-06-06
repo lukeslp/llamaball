@@ -198,7 +198,7 @@ ehthumbs.db
 Desktop.ini
 
 # llamaball specific
-.clai.db
+.llamaball.db
 *.db
 archive/
 logs/

@@ -6,7 +6,7 @@ Inputs: N/A (initialization only)
 Outputs: Package version and core functions
 """
 
-__version__ = "0.1.1"
+__version__ = "1.0.0"
 
 # Import core functionality to make it available at package level
 from . import core
