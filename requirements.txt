@@ -53,7 +53,7 @@ keyring==23.5.0
 launchpadlib==1.10.16
 lazr.restfulclient==0.14.4
 lazr.uri==1.0.6
--e git+https://github.com/lukeslp/doc_chat_ai@31ef3b6f4d6b4772bad2fe50b4d2abfdf8e23747#egg=llamaball
+-e git+https://github.com/lukeslp/llamaball@main#egg=llamaball
 llamaline @ file:///home/coolhand/my_packages/llamaline/dist/llamaline-1.0.2-py3-none-any.whl#sha256=0676e97505e220609d5e7671121f880e838537402ca3a575b7f656b731888e9b
 lxml==5.4.0
 markdown-it-py==3.0.0
