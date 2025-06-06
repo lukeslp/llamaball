@@ -153,7 +153,8 @@ def show_welcome():
     # Create a beautiful panel with gradient border
     panel = Panel(
         Align.center(welcome_content),
-        title=Align.center(title),
+        title=title,
+        title_align="center",
         border_style=THEME_COLORS['primary'],
         padding=(1, 2),
         expand=True
