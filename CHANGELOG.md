@@ -10,6 +10,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Future enhancements and features will be listed here
 
+## [1.1.0] - 2025-01-06
+
+### Added - Major Feature Release
+- **🎨 Rich CLI Interface** - Complete visual overhaul with beautiful colors, progress bars, and accessibility features
+- **📁 Universal File Support** - 100+ file types across 10 categories including HTML, RTF, email, archives, and configuration files
+- **🌐 Web File Processing** - HTML, XML, RSS, Atom, SVG parsing with BeautifulSoup integration
+- **📧 Email Support** - .eml, .msg, .mbox parsing with full metadata extraction
+- **🗜️ Archive Processing** - ZIP, TAR, 7Z file content extraction and indexing
+- **⚙️ Configuration Files** - Support for .conf, .env, .gitignore, and many config formats
+- **🎯 Enhanced Progress Tracking** - Multi-stage progress bars with spinners, time estimates, and file-by-file updates
+- **🎨 Color Theme System** - Comprehensive color scheme with accessibility considerations
+- **📊 Beautiful Statistics** - Enhanced tables and panels for all database information
+- **🌳 File Type Tree View** - Visual display of all supported file types with `--show-types`
+
+### Enhanced File Type Support
+- **📝 Text Documents**: Added .rtf, .textile, .mediawiki, .creole, .bbcode support
+- **💻 Source Code**: Extended to .gradle, .cmake, .scss, .sass, .less, .vue, .svelte, .astro, .coffee
+- **🌐 Web Files**: New category with .html, .htm, .xhtml, .xml, .rss, .atom, .svg, .jsp, .php
+- **📄 Documents**: Added .odt, .pages support with enhanced parsing
+- **📊 Data Files**: Added .parquet, .arrow, .feather, .pickle, .hdf5 support
+- **📧 Email**: New category with comprehensive email format support
+- **🗜️ Archives**: New category with content extraction capabilities
+- **⚙️ Config**: New category with development configuration file support
+
+### CLI Enhancements
+- **Rich Progress Bars** - Multi-stage progress with spinners, completion bars, and time tracking
+- **Enhanced Color Scheme** - Accessibility-focused color palette with semantic meaning
+- **Interactive Chat Improvements** - Styled panels, gradient text effects, and beautiful responses
+- **File Type Display** - Tree view showing all supported formats organized by category
+- **Error Categorization** - Intelligent error grouping with helpful installation suggestions
+- **Enhanced Help System** - Beautiful panels and comprehensive command documentation
+
+### Core Processing Improvements
+- **Progress Callback System** - Real-time progress updates during file processing
+- **Enhanced Error Handling** - Categorized error reporting with specific solutions
+- **Improved Parallel Processing** - Better embedding generation with progress tracking
+- **File Processing Pipeline** - Two-phase processing with counting and processing stages
+
+### Documentation Updates
+- **Complete README Rewrite** - Comprehensive documentation of all new features
+- **Enhanced API Documentation** - Detailed function descriptions and usage examples
+- **Accessibility Documentation** - Screen reader compatibility and inclusive design notes
+- **File Type Documentation** - Complete listing of 100+ supported file formats
+
+### Technical Improvements
+- **BeautifulSoup Integration** - Clean HTML text extraction with fallback parsing
+- **Pypandoc Support** - RTF document processing with error handling
+- **Archive Processing** - Content extraction from compressed files
+- **Enhanced Parsing Pipeline** - Robust error handling with graceful degradation
+
 ## [1.0.0] - 2025-01-06
 
 ### Added

@@ -57,6 +57,8 @@ dependencies = [
     "python-docx>=1.1.2",
     "openpyxl>=3.1.0",
     "xlrd>=2.0.1",
+    "beautifulsoup4>=4.9.0",
+    "pypandoc>=1.7.0",
 ]
 
 [project.optional-dependencies]
