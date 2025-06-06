@@ -4,7 +4,7 @@
 set -e
 
 # Extract version from __init__.py
-VERSION=$(grep "__version__" llamaball/__init__.py | cut -d'"' -f2)
+VERSION=$(grep -o '__version__ = "[^"]*"' llamaball/__init__.py | cut -d'"' -f2)
 
 echo "🦙 Llamaball v$VERSION Release Preparation"
 echo "======================================="
