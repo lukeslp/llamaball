@@ -364,7 +364,7 @@ def ingest_command(
         if not quiet:
             # Create beautiful progress display with multiple stages
             with Progress(
-                SpinnerColumn(spinner_style=THEME_COLORS['primary']),
+                SpinnerColumn(),
                 TextColumn("[bold blue]{task.description}"),
                 BarColumn(bar_width=40, style=THEME_COLORS['primary'], complete_style=THEME_COLORS['success']),
                 TaskProgressColumn(),
@@ -1084,7 +1084,7 @@ def start_interactive_chat(
             ]
             
             with Progress(
-                SpinnerColumn(spinner_style=THEME_COLORS['primary']),
+                SpinnerColumn(),
                 TextColumn("[bold blue]{task.description}"),
                 console=console,
                 transient=True

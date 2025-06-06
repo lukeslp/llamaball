@@ -1,9 +1,12 @@
 #!/bin/bash
-# Release preparation script for llamaball v1.0.0
+# Release preparation script for llamaball
 
 set -e
 
-echo "🦙 Llamaball v1.0.0 Release Preparation"
+# Extract version from __init__.py
+VERSION=$(grep "__version__" llamaball/__init__.py | cut -d'"' -f2)
+
+echo "🦙 Llamaball v$VERSION Release Preparation"
 echo "======================================="
 
 # Check if we're in a git repository
@@ -32,8 +35,7 @@ if [[ "$CURRENT_BRANCH" != "main" ]]; then
     fi
 fi
 
-# Set version
-VERSION="1.0.0"
+# Set tag
 TAG="v$VERSION"
 
 echo "📦 Building package..."
