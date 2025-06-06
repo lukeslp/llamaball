@@ -1,20 +1,26 @@
-import os
-import sys
-import sqlite3
-import numpy as np
-from numpy.linalg import norm
-import ollama
-import logging
-import json
 import csv
-import tiktoken
+import json
+import logging
+import os
+import re
+import sqlite3
 import subprocess
+import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Tuple, Optional
-from .utils import render_markdown_to_html
-import re
+from typing import List, Optional, Tuple
+
+import numpy as np
+import ollama
 import requests
+import tiktoken
+import xlrd
+from docx import Document
+from numpy.linalg import norm
+from openpyxl import load_workbook
+from pdfminer.high_level import extract_text
+
+from .utils import render_markdown_to_html
 
 # Logging setup
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -33,13 +39,43 @@ FILE_LOADERS = {
     ".md": lambda p: open(p, "r", encoding="utf-8").read(),
     ".py": lambda p: open(p, "r", encoding="utf-8").read(),
     ".json": lambda p: json.dumps(json.load(open(p, "r", encoding="utf-8")), indent=2),
-    ".csv": lambda p: "\n".join([", ".join(row) for row in csv.reader(open(p, "r", encoding="utf-8"))])
+    ".csv": lambda p: "\n".join(
+        [", ".join(row) for row in csv.reader(open(p, "r", encoding="utf-8"))]
+    ),
+    ".tsv": lambda p: "\n".join(
+        [
+            "\t".join(row)
+            for row in csv.reader(open(p, "r", encoding="utf-8"), delimiter="\t")
+        ]
+    ),
+    ".pdf": lambda p: extract_text(
+        p
+    ),  # https://pdfminersix.readthedocs.io/en/latest/tutorial/composable.html#extract-text
+    ".docx": lambda p: "\n".join(
+        [para.text for para in Document(p).paragraphs]
+    ),  # https://python-docx.readthedocs.io/en/latest/
+    ".xlsx": lambda p: "\n".join(
+        [
+            ", ".join([str(cell) if cell is not None else "" for cell in row])
+            for sheet in load_workbook(p, data_only=True).worksheets
+            for row in sheet.iter_rows(values_only=True)
+        ]
+    ),
+    ".xls": lambda p: "\n".join(
+        [
+            ", ".join(
+                [str(cell.value) if cell.value is not None else "" for cell in row]
+            )
+            for row in xlrd.open_workbook(p).sheet_by_index(0).get_rows()
+        ]
+    ),
 }
 
 SYSTEM_PROMPT = (
     "You are an assistant that identifies the most feature-complete and robust version of code files "
     "based on the provided context."
 )
+
 
 def init_db(db_path: str) -> sqlite3.Connection:
     """
@@ -50,7 +86,8 @@ def init_db(db_path: str) -> sqlite3.Connection:
     c.execute("DROP TABLE IF EXISTS documents")
     c.execute("DROP TABLE IF EXISTS embeddings")
     c.execute("DROP TABLE IF EXISTS files")
-    c.execute("""
+    c.execute(
+        """
         CREATE TABLE IF NOT EXISTS documents (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             filename TEXT,
@@ -58,47 +95,54 @@ def init_db(db_path: str) -> sqlite3.Connection:
             content TEXT,
             UNIQUE(filename, chunk_idx)
         )
-    """)
-    c.execute("""
+    """
+    )
+    c.execute(
+        """
         CREATE TABLE IF NOT EXISTS embeddings (
             doc_id INTEGER PRIMARY KEY,
             embedding BLOB,
             FOREIGN KEY(doc_id) REFERENCES documents(id)
         )
-    """)
-    c.execute("""
+    """
+    )
+    c.execute(
+        """
     CREATE TABLE IF NOT EXISTS files (
         filename TEXT PRIMARY KEY,
         mtime REAL
     )
-    """)
+    """
+    )
     conn.commit()
     return conn
 
-def get_embedding(text: str, model: str, provider: str = DEFAULT_PROVIDER) -> np.ndarray:
+
+def get_embedding(
+    text: str, model: str, provider: str = DEFAULT_PROVIDER
+) -> np.ndarray:
     """Get embedding from Ollama API using specified model"""
     resp = ollama.embed(model=model, input=text)
     emb = resp["embeddings"]
     return np.array(emb, dtype=np.float32)
 
+
 def _insert_chunk(cursor, filename, idx, text):
     cursor.execute(
         "INSERT OR IGNORE INTO documents (filename, chunk_idx, content) VALUES (?, ?, ?)",
-        (filename, idx, text)
+        (filename, idx, text),
     )
     cursor.connection.commit()
+
 
 def run_python_code_func(code: str) -> str:
     """Execute Python code in a temp file and return stdout or stderr."""
     try:
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(code)
             temp_path = f.name
         proc = subprocess.run(
-            [sys.executable, temp_path],
-            capture_output=True,
-            text=True,
-            check=False
+            [sys.executable, temp_path], capture_output=True, text=True, check=False
         )
         os.unlink(temp_path)
         if proc.stderr:
@@ -107,17 +151,15 @@ def run_python_code_func(code: str) -> str:
     except Exception as e:
         return f"Error running Python code: {e}"
 
+
 def run_bash_command_func(command: str) -> str:
     """Execute a bash command safely and return stdout or stderr."""
-    unsafe = ['sudo', 'rm -rf', '>', '>>', '|', '&', ';']
+    unsafe = ["sudo", "rm -rf", ">", ">>", "|", "&", ";"]
     if any(tok in command for tok in unsafe):
         return "Error: Command contains unsafe operations"
     try:
         proc = subprocess.run(
-            ['sh', '-c', command],
-            capture_output=True,
-            text=True,
-            check=False
+            ["sh", "-c", command], capture_output=True, text=True, check=False
         )
         if proc.stderr:
             return f"Error:\n{proc.stderr}"
@@ -125,17 +167,27 @@ def run_bash_command_func(command: str) -> str:
     except Exception as e:
         return f"Error running bash command: {e}"
 
-def ingest_files(directory: str, db_path: str, model_name: str, provider: str, recursive: bool, exclude_patterns: Optional[List[str]] = None) -> None:
+
+def ingest_files(
+    directory: str,
+    db_path: str,
+    model_name: str,
+    provider: str,
+    recursive: bool,
+    exclude_patterns: Optional[List[str]] = None,
+) -> None:
     """
     Ingest files with plugin loaders, chunk by token boundaries,
     skip unchanged files, and enqueue embedding tasks.
     """
     import fnmatch
-    
+
     if exclude_patterns is None:
         exclude_patterns = []
-    
-    walker = os.walk(directory) if recursive else [(directory, [], os.listdir(directory))]
+
+    walker = (
+        os.walk(directory) if recursive else [(directory, [], os.listdir(directory))]
+    )
     conn = init_db(db_path)
     c = conn.cursor()
     encoder = tiktoken.get_encoding("cl100k_base")
@@ -145,13 +197,15 @@ def ingest_files(directory: str, db_path: str, model_name: str, provider: str, r
         for fname in files:
             path = os.path.join(root, fname)
             rel_path = os.path.relpath(path, directory) if recursive else fname
-            
+
             # Check exclude patterns
-            if any(fnmatch.fnmatch(rel_path, pattern) or fnmatch.fnmatch(fname, pattern) 
-                   for pattern in exclude_patterns):
+            if any(
+                fnmatch.fnmatch(rel_path, pattern) or fnmatch.fnmatch(fname, pattern)
+                for pattern in exclude_patterns
+            ):
                 logger.debug(f"Excluding file: {rel_path}")
                 continue
-            
+
             ext = os.path.splitext(fname)[1].lower()
             loader = FILE_LOADERS.get(ext)
             if not loader or not os.path.isfile(path):
@@ -170,7 +224,7 @@ def ingest_files(directory: str, db_path: str, model_name: str, provider: str, r
                 continue
             if not content:
                 continue
-            paragraphs = re.split(r'\n\s*\n', content)
+            paragraphs = re.split(r"\n\s*\n", content)
             token_buffer = []
             for para in paragraphs:
                 para_tokens = encoder.encode(para, disallowed_special=())
@@ -185,15 +239,22 @@ def ingest_files(directory: str, db_path: str, model_name: str, provider: str, r
                 text_chunk = encoder.decode(token_buffer)
                 _insert_chunk(c, rel_path, len(embed_tasks), text_chunk)
                 embed_tasks.append((rel_path, text_chunk))
-            c.execute("INSERT OR REPLACE INTO files (filename, mtime) VALUES (?, ?)", (rel_path, mtime))
+            c.execute(
+                "INSERT OR REPLACE INTO files (filename, mtime) VALUES (?, ?)",
+                (rel_path, mtime),
+            )
             conn.commit()
     conn.close()
     logger.info(f"Queued {len(embed_tasks)} chunks for embedding")
+
     def embed_worker(task):
         rel_path, chunk = task
         conn_thread = sqlite3.connect(db_path, check_same_thread=False)
         c_thread = conn_thread.cursor()
-        c_thread.execute("SELECT id FROM documents WHERE filename = ? AND content = ?", (rel_path, chunk))
+        c_thread.execute(
+            "SELECT id FROM documents WHERE filename = ? AND content = ?",
+            (rel_path, chunk),
+        )
         row = c_thread.fetchone()
         if not row:
             return
@@ -201,17 +262,28 @@ def ingest_files(directory: str, db_path: str, model_name: str, provider: str, r
         try:
             emb = get_embedding(chunk, model_name, provider)
             emb_blob = emb.tobytes()
-            c_thread.execute("INSERT OR REPLACE INTO embeddings (doc_id, embedding) VALUES (?, ?)", (doc_id, emb_blob))
+            c_thread.execute(
+                "INSERT OR REPLACE INTO embeddings (doc_id, embedding) VALUES (?, ?)",
+                (doc_id, emb_blob),
+            )
             conn_thread.commit()
             logger.info(f"Embedded {rel_path} (doc_id={doc_id})")
         except Exception as e:
             logger.error(f"Error embedding {rel_path}: {e}")
         finally:
             conn_thread.close()
+
     with ThreadPoolExecutor(max_workers=5) as pool:
         list(pool.map(embed_worker, embed_tasks))
 
-def search_embeddings(query: str, db_path: str, model_name: str, top_k: int, provider: str = DEFAULT_PROVIDER) -> list:
+
+def search_embeddings(
+    query: str,
+    db_path: str,
+    model_name: str,
+    top_k: int,
+    provider: str = DEFAULT_PROVIDER,
+) -> list:
     """
     Search the SQLite DB for the top_k documents most similar to the query.
     """
@@ -238,6 +310,7 @@ def search_embeddings(query: str, db_path: str, model_name: str, top_k: int, pro
     conn.close()
     return results
 
+
 def get_available_models(filter_model: Optional[str] = None) -> List[dict]:
     """
     Fetch available Ollama models using the /tags endpoint.
@@ -251,48 +324,82 @@ def get_available_models(filter_model: Optional[str] = None) -> List[dict]:
             data = response.json()
             models = []
             for model in data.get("models", []):
-                models.append({
-                    "name": model["name"],
-                    "size": model.get("size", 0),
-                    "modified_at": model.get("modified_at", ""),
-                    "digest": model.get("digest", ""),
-                    "details": model.get("details", {})
-                })
-            
+                models.append(
+                    {
+                        "name": model["name"],
+                        "size": model.get("size", 0),
+                        "modified_at": model.get("modified_at", ""),
+                        "digest": model.get("digest", ""),
+                        "details": model.get("details", {}),
+                    }
+                )
+
             # Filter for specific model if requested
             if filter_model:
                 filtered_models = [m for m in models if m["name"] == filter_model]
                 if not filtered_models:
                     # If not found, create a placeholder entry
-                    return [{"name": filter_model, "size": 0, "modified_at": "", "digest": "", "details": {}}]
+                    return [
+                        {
+                            "name": filter_model,
+                            "size": 0,
+                            "modified_at": "",
+                            "digest": "",
+                            "details": {},
+                        }
+                    ]
                 return filtered_models
-            
+
             return models
         else:
-            logger.warning(f"Failed to fetch models from Ollama API: {response.status_code}")
+            logger.warning(
+                f"Failed to fetch models from Ollama API: {response.status_code}"
+            )
     except Exception as e:
         logger.warning(f"Error fetching models from Ollama API: {e}")
-    
+
     # Fallback to custom model if provided
     if filter_model:
-        return [{"name": filter_model, "size": 0, "modified_at": "", "digest": "", "details": {}}]
-    
+        return [
+            {
+                "name": filter_model,
+                "size": 0,
+                "modified_at": "",
+                "digest": "",
+                "details": {},
+            }
+        ]
+
     # Default fallback models
     return [
-        {"name": "llama3.2:1b", "size": 0, "modified_at": "", "digest": "", "details": {}},
-        {"name": "llama3.2:3b", "size": 0, "modified_at": "", "digest": "", "details": {}},
+        {
+            "name": "llama3.2:1b",
+            "size": 0,
+            "modified_at": "",
+            "digest": "",
+            "details": {},
+        },
+        {
+            "name": "llama3.2:3b",
+            "size": 0,
+            "modified_at": "",
+            "digest": "",
+            "details": {},
+        },
     ]
+
 
 def format_model_size(size_bytes: int) -> str:
     """Format model size in human-readable format"""
     if size_bytes == 0:
         return "Unknown"
-    
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
         if size_bytes < 1024.0:
             return f"{size_bytes:.1f} {unit}"
         size_bytes /= 1024.0
     return f"{size_bytes:.1f} PB"
+
 
 def chat(
     db: str = DEFAULT_DB_PATH,
@@ -306,23 +413,23 @@ def chat(
     max_tokens: int = 512,
     top_p: float = 0.9,
     top_k: int = 40,
-    repeat_penalty: float = 1.1
+    repeat_penalty: float = 1.1,
 ) -> str:
     """
     Run a chat session or single chat turn. Returns the assistant's response as Markdown.
     """
     if history is None:
         history = []
-    
+
     if user_input is None:
         raise ValueError("user_input is required")
-    
+
     # Search for relevant documents
     docs = search_embeddings(user_input, db, model, topk, provider)
     context = ""
     for fname, content, score in docs:
         context += f"== {fname} (score={score:.4f}) ==\n{content}\n\n"
-    
+
     # Build the prompt with context
     prompt_text = f"""Based on the following context from documents, please answer the question.
 
@@ -332,10 +439,14 @@ Context:
 Question: {user_input}
 
 Please provide a helpful answer based on the context provided. If the context doesn't contain relevant information, say so clearly."""
-    
+
     # Prepare messages for chat
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history.copy() + [{"role": "user", "content": prompt_text}]
-    
+    messages = (
+        [{"role": "system", "content": SYSTEM_PROMPT}]
+        + history.copy()
+        + [{"role": "user", "content": prompt_text}]
+    )
+
     # Define available tools
     tools = [
         {
@@ -348,35 +459,38 @@ Please provide a helpful answer based on the context provided. If the context do
                     "properties": {
                         "code": {"type": "string", "description": "Python code to run"}
                     },
-                    "required": ["code"]
-                }
-            }
+                    "required": ["code"],
+                },
+            },
         },
         {
-            "type": "function", 
+            "type": "function",
             "function": {
                 "name": "run_bash_command",
                 "description": "Execute a bash command and return the output.",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "command": {"type": "string", "description": "Bash command to run"}
+                        "command": {
+                            "type": "string",
+                            "description": "Bash command to run",
+                        }
                     },
-                    "required": ["command"]
-                }
-            }
-        }
+                    "required": ["command"],
+                },
+            },
+        },
     ]
-    
+
     # Prepare model options
     options = {
         "temperature": temperature,
         "num_predict": max_tokens,
         "top_p": top_p,
         "top_k": top_k,
-        "repeat_penalty": repeat_penalty
+        "repeat_penalty": repeat_penalty,
     }
-    
+
     try:
         # Try with tools first
         response = ollama.chat(
@@ -384,69 +498,82 @@ Please provide a helpful answer based on the context provided. If the context do
             messages=messages,
             tools=tools,
             options=options,
-            stream=False
+            stream=False,
         )
     except Exception as e:
         if "does not support tools" in str(e):
             # Fallback to chat without tools
-            logger.info(f"Model {chat_model} doesn't support tools, falling back to simple chat")
+            logger.info(
+                f"Model {chat_model} doesn't support tools, falling back to simple chat"
+            )
             response = ollama.chat(
-                model=chat_model,
-                messages=messages,
-                options=options,
-                stream=False
+                model=chat_model, messages=messages, options=options, stream=False
             )
         else:
             raise e
-    
+
     try:
-        # Handle response based on ollama API structure  
+        # Handle response based on ollama API structure
         if isinstance(response, dict):
             msg = response.get("message", {})
         else:
             msg = response.message if hasattr(response, "message") else {}
-        
+
         # Check for tool calls
         if isinstance(msg, dict) and msg.get("tool_calls"):
             tool_calls = msg["tool_calls"]
             for tool_call in tool_calls:
                 function_name = tool_call["function"]["name"]
                 arguments = tool_call["function"]["arguments"]
-                
+
                 if function_name == "run_python_code":
                     tool_result = run_python_code_func(arguments["code"])
                 elif function_name == "run_bash_command":
                     tool_result = run_bash_command_func(arguments["command"])
                 else:
                     tool_result = f"Unknown function: {function_name}"
-                
+
                 # Add tool result to messages and get final response
                 tool_message = {
                     "role": "tool",
                     "name": function_name,
-                    "content": tool_result
+                    "content": tool_result,
                 }
-                
+
                 followup = ollama.chat(
                     model=chat_model,
                     messages=messages + [msg, tool_message],
                     options=options,
-                    stream=False
+                    stream=False,
                 )
-                
+
                 if isinstance(followup, dict):
                     followup_msg = followup.get("message", {})
                 else:
-                    followup_msg = followup.message if hasattr(followup, "message") else {}
-                
-                answer = followup_msg.get("content", "") if isinstance(followup_msg, dict) else getattr(followup_msg, "content", "")
+                    followup_msg = (
+                        followup.message if hasattr(followup, "message") else {}
+                    )
+
+                answer = (
+                    followup_msg.get("content", "")
+                    if isinstance(followup_msg, dict)
+                    else getattr(followup_msg, "content", "")
+                )
                 break
         else:
             # No tool calls, just return the content
-            answer = msg.get("content", "") if isinstance(msg, dict) else getattr(msg, "content", "")
-        
-        return render_markdown_to_html(answer) if answer else "I'm sorry, I couldn't generate a response."
-        
+            answer = (
+                msg.get("content", "")
+                if isinstance(msg, dict)
+                else getattr(msg, "content", "")
+            )
+
+        return (
+            render_markdown_to_html(answer)
+            if answer
+            else "I'm sorry, I couldn't generate a response."
+        )
+
     except Exception as e:
         logger.error(f"Error in chat function: {e}")
-        return f"Error generating response: {e}" 
+        return f"Error generating response: {e}"

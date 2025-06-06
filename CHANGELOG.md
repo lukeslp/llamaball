@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Modern packaging with pyproject.toml
 - Comprehensive development tooling configuration
 - Package distribution readiness
+- Support for PDF, DOCX, and spreadsheet ingestion
 
 ## [0.1.0] - 2025-01-06
 
