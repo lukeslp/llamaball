@@ -9,10 +9,10 @@ description = "Accessible document chat and RAG system powered by Ollama"
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
-    {name = "Luke Steuber", email = "luke@llamaball.dev"},
+    {name = "Luke Steuber", email = "luke@lukesteuber.com"},
 ]
 maintainers = [
-    {name = "Luke Steuber", email = "luke@llamaball.dev"},
+    {name = "Luke Steuber", email = "luke@lukesteuber.com"},
 ]
 keywords = [
     "rag",
@@ -75,11 +75,11 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/lsteuber/llamaball"
+Homepage = "https://github.com/lukeslp/llamaball"
 Documentation = "https://llamaball.readthedocs.io"
-Repository = "https://github.com/lsteuber/llamaball"
-Issues = "https://github.com/lsteuber/llamaball/issues"
-Changelog = "https://github.com/lsteuber/llamaball/blob/main/CHANGELOG.md"
+Repository = "https://github.com/lukeslp/llamaball"
+Issues = "https://github.com/lukeslp/llamaball/issues"
+Changelog = "https://github.com/lukeslp/llamaball/blob/main/CHANGELOG.md"
 
 [project.scripts]
 llamaball = "llamaball.cli:main"
