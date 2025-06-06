@@ -381,7 +381,7 @@ llamaball config --enable-mmap --mmap-threshold 100MB
 
 ```bash
 # Clone repository with submodules
-git clone --recursive https://github.com/lsteuber/llamaball.git
+git clone --recursive https://github.com/lukeslp/llamaball.git
 cd llamaball
 
 # Install in development mode with all dependencies
@@ -539,7 +539,7 @@ llamaball/
 - **Social**: [@lukesteuber.com](https://bsky.app/profile/lukesteuber.com) on Bluesky
 - **Professional**: [LinkedIn](https://www.linkedin.com/in/lukesteuber/)
 - **Support**: [Tip Jar](https://usefulai.lemonsqueezy.com/buy/bf6ce1bd-85f5-4a09-ba10-191a670f74af)
-- **Newsletter**: [Substack](https://lukesteuber.substack.com/)
+- **Newsletter**: [lukesteuber.substack.com](https://lukesteuber.substack.com/)
 - **Code**: [GitHub @lukeslp](https://github.com/lukeslp)
 
 ## 🙏 Acknowledgments & Technology Stack
