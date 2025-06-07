@@ -55,51 +55,22 @@ THEME_COLORS = {
     'highlight': '#FFD700'     # Gold
 }
 
-# Enhanced spinner styles
-SPINNERS = [
-    "dots", "dots2", "dots3", "dots4", "dots5", "dots6", "dots7", 
-    "dots8", "dots9", "dots10", "dots11", "dots12",
-    "line", "line2", "pipe", "simpleDots", "simpleDotsScrolling",
-    "star", "star2", "flip", "hamburger", "growVertical", "growHorizontal",
-    "balloon", "balloon2", "noise", "bounce", "boxBounce", "boxBounce2",
-    "triangle", "arc", "circle", "squareCorners", "circleQuarters",
-    "circleHalves", "squish", "toggle", "toggle2", "toggle3", "toggle4",
-    "toggle5", "toggle6", "toggle7", "toggle8", "toggle9", "toggle10",
-    "toggle11", "toggle12", "toggle13", "arrow", "arrow2", "arrow3",
-    "bouncingBar", "bouncingBall", "smiley", "monkey", "hearts", "clock",
-    "earth", "moon", "runner", "pong", "shark", "dqpb", "weather",
-    "christmas"
-]
+# Simple spinner styles
+SPINNERS = ["dots", "line", "arc", "circle", "toggle"]
 
 # Main app with comprehensive help
 app = typer.Typer(
     name="llamaball",
     help=f"""
-[bold {THEME_COLORS['primary']}]🦙 Llamaball: Accessible Document Chat & RAG System[/bold {THEME_COLORS['primary']}]
+[bold {THEME_COLORS['primary']}]🦙 Llamaball: Document Chat & RAG System[/bold {THEME_COLORS['primary']}]
 
-[italic {THEME_COLORS['muted']}]An ethical, accessible, and actually useful document chat system powered by Ollama.[/italic {THEME_COLORS['muted']}]
-[italic {THEME_COLORS['muted']}]Perfect for researchers, developers, and anyone who needs to chat with their documents.[/italic {THEME_COLORS['muted']}]
+[italic {THEME_COLORS['muted']}]Chat with your documents using local AI models.[/italic {THEME_COLORS['muted']}]
 
-[bold {THEME_COLORS['accent']}]✨ Features:[/bold {THEME_COLORS['accent']}]
-• [bold {THEME_COLORS['info']}]Local AI processing[/bold {THEME_COLORS['info']}] (no data leaves your machine)
-• [bold {THEME_COLORS['success']}]Accessibility-first design[/bold {THEME_COLORS['success']}] (screen reader friendly)
-• [bold {THEME_COLORS['primary']}]Fast semantic search and retrieval[/bold {THEME_COLORS['primary']}]
-• [bold {THEME_COLORS['warning']}]Function calling and tool execution[/bold {THEME_COLORS['warning']}]
-• [bold {THEME_COLORS['accent']}]Multiple model support[/bold {THEME_COLORS['accent']}]
-
-[bold {THEME_COLORS['highlight']}]🚀 Quick Examples:[/bold {THEME_COLORS['highlight']}]
-  [bold]llamaball models[/bold]                      [dim]# List available models[/dim]
-  [bold]llamaball ingest .[/bold]                    [dim]# Ingest current directory[/dim]
-  [bold]llamaball ingest ~/docs -r[/bold]            [dim]# Recursively ingest docs folder[/dim]
-  [bold]llamaball chat[/bold]                        [dim]# Start interactive chat[/dim]
-  [bold]llamaball chat -c llamaball-qwen3:4b[/bold]  [dim]# Chat with specific model[/dim]
-  [bold]llamaball chat --temp 0.3 --max-tokens 1024[/bold]  [dim]# Adjust parameters[/dim]
-  [bold]llamaball stats[/bold]                       [dim]# Show database statistics[/dim]
-  
-[bold {THEME_COLORS['success']}]🎯 Get started:[/bold {THEME_COLORS['success']}]
-  [bold]1.[/bold] [cyan]llamaball ingest --dir /path/to/docs[/cyan]
-  [bold]2.[/bold] [cyan]llamaball chat[/cyan]
-  [bold]3.[/bold] [cyan]Ask questions about your documents![/cyan]
+[bold {THEME_COLORS['highlight']}]Quick Start:[/bold {THEME_COLORS['highlight']}]
+  [bold]llamaball ingest .[/bold]     [dim]# Index current directory[/dim]
+  [bold]llamaball chat[/bold]         [dim]# Start chatting[/dim]
+  [bold]llamaball models[/bold]       [dim]# List available models[/dim]
+  [bold]llamaball stats[/bold]        [dim]# Show database info[/dim]
 """,
     rich_markup_mode="rich",
     no_args_is_help=True,
@@ -362,54 +333,28 @@ def ingest_command(
 
     try:
         if not quiet:
-            # Create beautiful progress display with multiple stages
+            # Simple progress display
             with Progress(
                 SpinnerColumn(),
                 TextColumn("[bold blue]{task.description}"),
                 BarColumn(bar_width=40, style=THEME_COLORS['primary'], complete_style=THEME_COLORS['success']),
                 TaskProgressColumn(),
-                TimeElapsedColumn(),
-                TimeRemainingColumn(),
                 console=console,
                 transient=False,
                 expand=False
             ) as progress:
                 
-                # Add tasks for different stages
-                file_task = progress.add_task(
-                    f"[{THEME_COLORS['info']}]🔍 Scanning files...", 
-                    total=100
-                )
-                
-                process_task = None
+                task = progress.add_task("📚 Processing files...", total=None)
                 
                 def progress_callback(current, total, filename):
-                    nonlocal process_task
-                    
-                    if process_task is None:
-                        progress.update(file_task, completed=100)
-                        process_task = progress.add_task(
-                            f"[{THEME_COLORS['primary']}]📄 Processing files...",
-                            total=total
-                        )
-                    
-                    progress.update(
-                        process_task, 
-                        completed=current,
-                        description=f"[{THEME_COLORS['primary']}]📄 Processing {filename[:50]}..."
-                    )
+                    if total and total > 0:
+                        progress.update(task, completed=current, total=total)
                 
                 # Call core function with progress callback
                 stats = core.ingest_files(
                     directory, db, model, provider, recursive, exclude_patterns, force,
                     progress_callback=progress_callback
                 )
-                
-                # Mark all tasks complete
-                if process_task:
-                    progress.update(process_task, completed=100)
-                
-                time.sleep(0.5)  # Brief pause to show completion
         else:
             stats = core.ingest_files(
                 directory, db, model, provider, recursive, exclude_patterns, force
