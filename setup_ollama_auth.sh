@@ -43,13 +43,13 @@ check_auth() {
     print_status "Checking current authentication status..."
     
     # Try to list models from the user's namespace
-    if ollama list | grep -q "lukeslp/" 2>/dev/null; then
+    if ollama list | grep -q "coolhand/" 2>/dev/null; then
         print_success "You appear to have lukeslp models locally"
         return 0
     fi
     
     # Try a simple push test (this will fail but show auth status)
-    if ollama push lukeslp/test 2>&1 | grep -q "not authorized"; then
+    if ollama push coolhand/test 2>&1 | grep -q "not authorized"; then
         print_warning "Not authenticated with Ollama Hub"
         return 1
     fi
@@ -69,15 +69,15 @@ SYSTEM "This is a test model for authentication verification."
 EOF
     
     # Try to create and push a test model
-    if ollama create -f /tmp/test_modelfile lukeslp/auth-test 2>/dev/null; then
-        if ollama push lukeslp/auth-test 2>/dev/null; then
+    if ollama create -f /tmp/test_modelfile coolhand/auth-test 2>/dev/null; then
+        if ollama push coolhand/auth-test 2>/dev/null; then
             print_success "Authentication test successful!"
-            ollama rm lukeslp/auth-test 2>/dev/null || true
+            ollama rm coolhand/auth-test 2>/dev/null || true
             rm -f /tmp/test_modelfile
             return 0
         else
             print_error "Authentication test failed - cannot push to lukeslp namespace"
-            ollama rm lukeslp/auth-test 2>/dev/null || true
+            ollama rm coolhand/auth-test 2>/dev/null || true
             rm -f /tmp/test_modelfile
             return 1
         fi

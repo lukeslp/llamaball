@@ -187,7 +187,7 @@ test:
     - llamaball --help
 
 about:
-  home: https://github.com/lukeslp/llamaball
+  home: https://github.com/coolhand/llamaball
   license: MIT
   license_family: MIT
   license_file: LICENSE
@@ -196,8 +196,8 @@ about:
     Llamaball is a comprehensive toolkit for document ingestion, embedding 
     generation, and conversational AI interactions with your local documents. 
     Built with local privacy and performance as core principles.
-  doc_url: https://github.com/lukeslp/llamaball#readme
-  dev_url: https://github.com/lukeslp/llamaball
+  doc_url: https://github.com/coolhand/llamaball#readme
+  dev_url: https://github.com/coolhand/llamaball
 
 extra:
   recipe-maintainers:
@@ -238,7 +238,7 @@ echo "  ✅ PyPI upload process initiated"
 echo "  ✅ Conda recipe generated"
 echo ""
 echo "🔗 Next steps:"
-echo "  1. GitHub Release: https://github.com/lukeslp/llamaball/releases"
+echo "  1. GitHub Release: https://github.com/coolhand/llamaball/releases"
 echo "     - Click 'Draft a new release'"
 echo "     - Select tag: $TAG"
 echo "     - Upload dist files as release assets"

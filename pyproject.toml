@@ -90,11 +90,11 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/lukeslp/llamaball"
+Homepage = "https://github.com/coolhand/llamaball"
 Documentation = "https://llamaball.readthedocs.io"
-Repository = "https://github.com/lukeslp/llamaball"
-Issues = "https://github.com/lukeslp/llamaball/issues"
-Changelog = "https://github.com/lukeslp/llamaball/blob/main/CHANGELOG.md"
+Repository = "https://github.com/coolhand/llamaball"
+Issues = "https://github.com/coolhand/llamaball/issues"
+Changelog = "https://github.com/coolhand/llamaball/blob/main/CHANGELOG.md"
 
 [project.scripts]
 llamaball = "llamaball.cli:main"

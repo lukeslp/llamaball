@@ -1075,21 +1075,14 @@ def start_interactive_chat(
                 console.print(command_panel)
                 continue
 
-            # Enhanced thinking indicator with animation
-            thinking_messages = [
-                "🤖 Analyzing documents...",
-                "🔍 Searching knowledge base...", 
-                "🧠 Generating response...",
-                "✨ Crafting answer..."
-            ]
-            
+            # Simple progress indicator
             with Progress(
                 SpinnerColumn(),
-                TextColumn("[bold blue]{task.description}"),
+                TextColumn("[bold blue]🤖 Processing..."),
                 console=console,
                 transient=True
             ) as progress:
-                task = progress.add_task(thinking_messages[0], total=None)
+                progress.add_task("", total=None)
                 
                 try:
                     response = core.chat(

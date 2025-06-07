@@ -17,7 +17,7 @@ Llamaball is built with **performance optimization and local privacy** as core p
 
 ```bash
 # Clone the repository with submodules
-git clone --recursive https://github.com/lukeslp/llamaball.git
+git clone --recursive https://github.com/coolhand/llamaball.git
 cd llamaball
 
 # Create a virtual environment

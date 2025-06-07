@@ -290,7 +290,7 @@ retriever = HybridRetriever(
 ### Development
 ```bash
 # Clone and setup development environment
-git clone https://github.com/lukeslp/llamaball.git
+git clone https://github.com/coolhand/llamaball.git
 cd llamaball
 pip install -e .[dev,test]
 
@@ -301,9 +301,9 @@ black llamaball/ tests/
 ```
 
 ### Community Resources
-- **📝 Documentation:** [GitHub README](https://github.com/lukeslp/llamaball#readme)
-- **🐛 Issues:** [GitHub Issues](https://github.com/lukeslp/llamaball/issues)
-- **💬 Discussions:** [GitHub Discussions](https://github.com/lukeslp/llamaball/discussions)
+- **📝 Documentation:** [GitHub README](https://github.com/coolhand/llamaball#readme)
+- **🐛 Issues:** [GitHub Issues](https://github.com/coolhand/llamaball/issues)
+- **💬 Discussions:** [GitHub Discussions](https://github.com/coolhand/llamaball/discussions)
 - **📦 PyPI:** [https://pypi.org/project/llamaball/](https://pypi.org/project/llamaball/)
 
 ---

@@ -385,7 +385,7 @@ llamaball config --enable-mmap --mmap-threshold 100MB
 
 ```bash
 # Clone repository with submodules
-git clone --recursive https://github.com/lukeslp/llamaball.git
+git clone --recursive https://github.com/coolhand/llamaball.git
 cd llamaball
 
 # Install in development mode with all dependencies
