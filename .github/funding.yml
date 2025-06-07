@@ -1,5 +1,12 @@
-# These are supported funding model platforms
+# These are supported funding model platforms and project links
 
 github: lukeslp
 patreon: lukeslp
-custom: ['https://usefulai.lemonsqueezy.com/buy/bf6ce1bd-85f5-4a09-ba10-191a670f74af', 'https://assisted.site/']
+custom:
+  - ' Assisted Site: https://assisted.site/'
+  - ' Source Code: https://github.com/lukeslp/llamaline'
+  - ' Email: luke@lukesteuber.com'
+  - ' Bluesky: https://bsky.app/profile/lukesteuber.com'
+  - ' LinkedIn: https://www.linkedin.com/in/lukesteuber/'
+  - ' Newsletter: https://lukesteuber.substack.com/'
+  - ' Support Development: https://usefulai.lemonsqueezy.com/buy/bf6ce1bd-85f5-4a09-ba10-191a670f74af'
