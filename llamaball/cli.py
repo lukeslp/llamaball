@@ -102,33 +102,21 @@ def create_gradient_text(text: str, colors: list) -> Text:
 
 
 def show_welcome():
-    """Display welcome message with beautiful styling and animations."""
-    
-    # Create animated title
-    title = create_gradient_text("🦙 Llamaball", [THEME_COLORS['primary'], THEME_COLORS['accent']])
+    """Display welcome message with simple styling."""
     
     welcome_content = f"""
-[bold {THEME_COLORS['primary']}]Welcome to Llamaball![/bold {THEME_COLORS['primary']}]
-[italic {THEME_COLORS['muted']}]Accessible, ethical, actually useful document chat[/italic {THEME_COLORS['muted']}]
+[bold {THEME_COLORS['primary']}]🦙 Llamaball - Document Chat System[/bold {THEME_COLORS['primary']}]
 
-[bold {THEME_COLORS['success']}]🚀 Quick Start:[/bold {THEME_COLORS['success']}]
+[bold {THEME_COLORS['success']}]Quick Start:[/bold {THEME_COLORS['success']}]
 • [bold cyan]llamaball ingest .[/bold cyan] - Index current directory
-• [bold cyan]llamaball chat[/bold cyan] - Start chatting with your docs
-• [bold cyan]llamaball --help[/bold cyan] - Show detailed help
-
-[bold {THEME_COLORS['info']}]💡 Need help?[/bold {THEME_COLORS['info']}] All commands support [bold cyan]--help[/bold cyan] flag
-
-[bold {THEME_COLORS['warning']}]🎨 Tip:[/bold {THEME_COLORS['warning']}] Use [bold]--show-types[/bold] with ingest to see all supported file formats!
+• [bold cyan]llamaball chat[/bold cyan] - Start chatting
+• [bold cyan]llamaball --help[/bold cyan] - Show help
 """
     
-    # Create a beautiful panel with gradient border
     panel = Panel(
-        Align.center(welcome_content),
-        title=title,
-        title_align="center",
+        welcome_content,
         border_style=THEME_COLORS['primary'],
-        padding=(1, 2),
-        expand=True
+        padding=(1, 2)
     )
     
     console.print()
