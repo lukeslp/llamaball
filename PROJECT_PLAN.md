@@ -1,145 +1,142 @@
-# 🦙 Llamaball Project Plan
+# 🦙 Llamaline Project Plan
 
-**Project:** Llamaball Package  
+**Project:** Llamaline - Your Friendly Document Chat Companion  
 **Version:** 0.1.0  
-**Status:** Package Distribution Ready  
-**Last Updated:** 2025-01-06
+**Status:** Ready to Rock & Roll  
+**Last Updated:** 2025-01-06  
+**Creator:** Luke Steuber (lukesteuber.com, assisted.site)
 
-## 🎯 Project Objectives
+---
 
-### Primary Goals
-1. **Accessibility-First RAG System**: Create a document chat system that prioritizes screen reader compatibility and keyboard navigation
-2. **Local AI Privacy**: 100% local processing with no data leaving the user's machine
-3. **Developer-Friendly Package**: Installable CLI and Python API with comprehensive documentation
-4. **Production-Ready Features**: Rich statistics, error handling, and monitoring capabilities
+## 🎯 What We're Building Here
 
-### Secondary Goals
-- **Multiple Model Support**: Configurable chat and embedding models
-- **Rich CLI Experience**: Beautiful terminal interface with progress indicators
-- **Comprehensive Documentation**: Self-describing code and extensive help
-- **Easy Integration**: Drop-in replacement for existing document chat systems
+### The Big Picture
+We're creating the most accessible, privacy-focused document chat system that actually works the way humans expect it to. No more sacrificing usability for features, no more choosing between privacy and functionality. Llamaline is proof that local AI can be both powerful and actually pleasant to use.
 
-## 🏗️ Current Architecture
+### Primary Goals (The Non-Negotiables)
+1. **Accessibility Champion**: Every single feature works beautifully with screen readers and keyboard navigation
+2. **Privacy Paradise**: Your documents never leave your machine - we're not in the data collection business
+3. **Developer Delight**: Clean Python API with proper type hints and documentation that doesn't make you cry
+4. **Production Polish**: Real statistics, intelligent error handling, and monitoring that actually helps
 
-### Package Structure
+### Secondary Goals (The Nice-to-Haves That Are Actually Pretty Important)
+- **Model Flexibility**: Support for multiple chat and embedding models because one size doesn't fit all
+- **Terminal Excellence**: CLI interface that doesn't make you want to switch to a GUI
+- **Documentation That Doesn't Suck**: Self-explaining code and help that actually helps
+- **Easy Integration**: Drop it into your workflow without rewriting everything
+
+## 🏗️ Current Architecture (How the Sausage Gets Made)
+
+### Package Structure (The Real Deal)
 ```
-llamaball/
-├── llamaball/              # Main package (✅ COMPLETED)
-│   ├── __init__.py         # Package initialization with version
-│   ├── cli.py              # Rich CLI with Typer + Rich
-│   ├── core.py             # Core RAG functionality
-│   ├── utils.py            # Utilities (markdown rendering)
-│   └── __main__.py         # Module execution support
-├── models/                 # Model configurations (✅ COMPLETED)
-│   ├── Modelfile.gemma3:1b # Gemma 3 1B config
-│   ├── Modelfile.qwen3:0.6b # Qwen3 configurations
-│   ├── Modelfile.qwen3:1.7b
-│   ├── Modelfile.qwen3:4b
-│   └── README_LLAMAFILE_RAG.md
-├── tests/                  # Test suite (✅ STRUCTURE READY)
+doc_chat_ai/
+├── llamaline/              # Main package (✅ WORKING)
+│   ├── __init__.py         # Package setup and public API exports
+│   ├── cli.py              # Rich CLI interface with Typer magic (34KB, 862 lines)
+│   ├── core.py             # RAG engine and database operations (17KB, 452 lines)
+│   ├── utils.py            # Helper functions and utilities (783B, 19 lines)
+│   └── __main__.py         # Module execution support (281B, 13 lines)
+├── models/                 # Ollama model configurations (✅ READY)
+│   ├── Modelfile.gemma3:1b # Gemma 3 1B configuration
+│   ├── Modelfile.qwen3:*   # Various Qwen3 configurations
+│   └── README_LLAMAFILE_RAG.md # Model documentation
+├── tests/                  # Test suite (🚧 STRUCTURE READY)
 │   ├── __init__.py
-│   └── test_core.py        # Basic test structure
-├── archive/                # Archived files (✅ ORGANIZED)
+│   └── test_core.py        # Basic test framework
+├── archive/                # Legacy files (✅ ORGANIZED)
 │   ├── legacy_scripts/     # Old setup/run scripts
-│   ├── development_files/  # .DS_Store, temp files
-│   └── test_data/          # Unrelated test directory
-├── pyproject.toml          # Modern packaging (✅ COMPLETED)
-├── setup.py                # Legacy compatibility (✅ COMPLETED)
-├── LICENSE                 # MIT License (✅ COMPLETED)
-├── CHANGELOG.md            # Version history (✅ COMPLETED)
-├── MANIFEST.in             # Package include/exclude (✅ COMPLETED)
-└── README.md               # Package documentation (✅ COMPLETED)
+│   ├── development_files/  # Temp files and artifacts
+│   └── test_data/          # Unrelated test directories
+├── venv/                   # Virtual environment (local)
+├── pyproject.toml          # Modern Python packaging (✅ DONE)
+├── setup.py                # Legacy compatibility (✅ DONE)
+├── LICENSE                 # MIT License (✅ DONE)
+├── CHANGELOG.md            # Version history (✅ DONE)
+├── CONTRIBUTING.md         # Contributor guidelines (✅ DONE)
+├── MANIFEST.in             # Package distribution control (✅ DONE)
+├── README.md               # Main documentation (✅ UPDATED)
+└── PROJECT_PLAN.md         # This document (✅ UPDATING)
 ```
 
-### Technology Stack
-- **CLI Framework**: Typer with Rich for enhanced UX
-- **LLM Backend**: Ollama for local model inference
-- **Embeddings**: nomic-embed-text (standardized across all tiers)
-- **Vector Store**: SQLite with custom similarity search
-- **UI/UX**: Rich terminal formatting, accessibility-focused
-- **Installation**: setuptools with pip-installable package
+### Technology Stack (Our Tools of Choice)
+- **CLI Magic**: Typer + Rich for a terminal experience that doesn't suck
+- **LLM Power**: Ollama for local model inference (privacy first!)
+- **Embeddings**: nomic-embed-text (standardized and reliable)
+- **Vector Storage**: SQLite with custom similarity search (simple but effective)
+- **UI/UX**: Rich terminal formatting with accessibility baked in
+- **Distribution**: Modern setuptools with pip-installable package
 
-## ✅ Completed Features
+## ✅ What's Actually Working Right Now
 
-### 🖥️ CLI Interface
-- [x] **Interactive Commands**: ingest, chat, stats, list, clear, version
-- [x] **Short Flags**: All commands support `-h`, `-v`, `-d`, `-m`, etc.
-- [x] **Rich Help System**: Comprehensive help with examples and tables
-- [x] **Welcome Screen**: Attractive landing page when run without args
-- [x] **Progress Indicators**: Real-time feedback during operations
-- [x] **Error Handling**: Descriptive errors with suggested solutions
-- [x] **Module Execution**: `python -m llamaball` and `llamaball` entry points
-- [x] **Package Installation**: pip-installable with proper entry points
-- [x] **Debug Mode**: Enhanced logging and debug output for troubleshooting
+### 🖥️ CLI Interface (The Face of the Operation)
+- [x] **Core Commands**: ingest, chat, stats, list, clear, version
+- [x] **Smart Flags**: Short flags everywhere (-h, -v, -d, -m, etc.)
+- [x] **Helpful Help**: Rich help system with examples and tables
+- [x] **Nice Landing**: Welcome screen when you run it without arguments
+- [x] **Real Feedback**: Progress bars and status updates that actually update
+- [x] **Smart Errors**: Error messages that tell you what went wrong AND how to fix it
+- [x] **Multiple Entry Points**: Both `python -m llamaline` and `llamaline` work
+- [x] **Pip Installation**: Installs cleanly with proper entry points
+- [x] **Debug Mode**: Verbose logging when things get weird
 
-### 🔍 Document Processing
-- [x] **Smart Ingestion**: Intelligent chunking and embedding generation
+### 🔍 Document Processing (The Smart Stuff)
+- [x] **Intelligent Ingestion**: Chunking that actually makes sense
 - [x] **File Type Support**: .txt, .md, .py, .json, .csv files
-- [x] **Recursive Scanning**: Optional subdirectory processing
-- [x] **Pattern Exclusion**: Configurable file filtering with fnmatch patterns
-- [x] **Force Re-indexing**: Option to rebuild entire database
+- [x] **Recursive Magic**: Scan subdirectories when you want to
+- [x] **Pattern Filtering**: Exclude files with fnmatch patterns
+- [x] **Force Rebuild**: Nuclear option when you need a fresh start
 - [x] **Parallel Processing**: Multi-threaded embedding generation
-- [x] **Skip Unchanged**: Efficient incremental updates based on mtime
+- [x] **Skip Unchanged**: Only reprocess files that actually changed
 
-### 💬 Chat System
-- [x] **Interactive Chat**: Real-time conversation with documents
-- [x] **Context Retrieval**: Top-K semantic search integration
-- [x] **Chat Commands**: help, stats, clear, exit commands
-- [x] **Session Management**: Conversation history and state
-- [x] **Configurable Models**: Support for different chat models
-- [x] **Tool Calling**: Python code execution and bash command support
-- [x] **Markdown Rendering**: HTML output formatted for terminal display
-- [x] **Error Recovery**: Graceful handling of model failures with fallbacks
+### 💬 Chat System (Where the Magic Happens)
+- [x] **Interactive Chat**: Real-time conversations with your documents
+- [x] **Context Retrieval**: Top-K semantic search that finds relevant stuff
+- [x] **Chat Commands**: Built-in help, stats, and control commands
+- [x] **Session Management**: Conversation history that persists
+- [x] **Configurable Models**: Switch models without losing your mind
+- [x] **Tool Support**: Python code execution and bash commands
+- [x] **Markdown Rendering**: Formatted output that looks good in the terminal
+- [x] **Error Recovery**: Graceful handling when models have bad days
 
-### 📊 Database Management
+### 📊 Database Management (The Organized Stuff)
 - [x] **Statistics Dashboard**: Document counts, file types, sizes
 - [x] **File Listing**: Searchable and sortable file inventory
 - [x] **Database Clearing**: Safe deletion with backup options
 - [x] **Multiple Formats**: Table, JSON, and plain text output
 
-### ♿ Accessibility Features
+### ♿ Accessibility Features (The Important Stuff)
 - [x] **Screen Reader Support**: Semantic markup throughout
-- [x] **Keyboard Navigation**: Full functionality via keyboard
-- [x] **High Contrast Output**: Rich formatting with good contrast
+- [x] **Keyboard Navigation**: Everything works without a mouse
+- [x] **High Contrast Output**: Terminal formatting that doesn't hurt
 - [x] **Clear Structure**: Predictable command patterns
-- [x] **Descriptive Feedback**: Comprehensive error messages
+- [x] **Descriptive Feedback**: Error messages that actually help
 
-### 🐍 Python API
+### 🐍 Python API (For the Developers)
 - [x] **Core Functions**: ingest_files, search_embeddings, chat
-- [x] **Type Hints**: Full typing support for IDE integration
-- [x] **Docstrings**: Comprehensive function documentation
+- [x] **Type Hints**: Full typing support for happy IDEs
+- [x] **Documentation**: Comprehensive docstrings
 - [x] **Error Handling**: Proper exception management
 
-### 🛠️ Model Configurations
+### 🛠️ Model Configurations (The Brains)
 - [x] **Gemma 3 1B**: Production-ready configuration
 - [x] **Qwen3 Series**: 0.6B, 1.7B, and 4B variants
 - [x] **Standardized Embedding**: nomic-embed-text across all configs
 - [x] **Template Optimization**: Consistent prompt formatting
 
-## 🔧 Recent Updates (2025-01-06)
+## 🔧 Recent Updates (What's Been Happening)
 
-### Package Distribution Preparation
-- **Modern Packaging**: Created comprehensive `pyproject.toml` with hatchling build system
-- **Repository Organization**: Moved legacy files to `archive/` directory for clean structure
-- **License & Documentation**: Added MIT license, changelog, and comprehensive README
-- **Development Tooling**: Configured black, isort, mypy, pytest for code quality
-- **Test Structure**: Created basic test framework with pytest configuration
-- **Package Metadata**: Added proper classifiers, keywords, and PyPI-ready information
-- **File Management**: Created MANIFEST.in for distribution control
-- **Git Configuration**: Updated .gitignore for Python package best practices
+### Dynamic Model & Parameter Control (The Flexible Stuff)
+- **Model Discovery**: Live fetching of available Ollama models
+- **Hot Swapping**: Change models mid-conversation without restarting
+- **Parameter Tweaking**: Adjust temperature, tokens, and other settings on the fly
+- **Session State**: Tracks conversation and settings across the chat session
+- **Rich Display**: Pretty tables showing model details and parameters
+- **Real-time Config**: All settings can be changed while chatting
+- **Status Monitoring**: See current configuration with `/status` command
 
-### Dynamic Model & Parameter Control
-- **Model Discovery**: Added `/api/tags` endpoint integration to fetch available Ollama models
-- **Live Model Switching**: Implemented `/model <name>` command for chat session model changes
-- **Parameter Adjustment**: Added commands for temperature, max tokens, top-p, top-k, repeat penalty
-- **Session State Management**: Created `ChatSession` class to track conversation and settings
-- **Rich Model Display**: Added formatted table showing model names, sizes, families, and parameters
-- **Real-time Configuration**: All model parameters can be changed mid-conversation
-- **Status Monitoring**: Added `/status` command to view current model and parameter settings
-
-### New Chat Commands (Interactive Session)
+### New Chat Commands (The Interactive Goodies)
 - ✅ `/models` - List all available Ollama models with details
-- ✅ `/model <name>` - Switch to a different chat model instantly  
+- ✅ `/model <n>` - Switch to a different chat model instantly  
 - ✅ `/temp <0.0-2.0>` - Adjust response creativity/randomness
 - ✅ `/tokens <1-8192>` - Change maximum response length
 - ✅ `/topk <1-20>` - Modify document retrieval count
@@ -148,198 +145,192 @@ llamaball/
 - ✅ `/status` - Display current model and parameter configuration
 - ✅ `/commands` - Show all available chat commands
 
-### New CLI Commands & Options
-- ✅ `llamaball models` - Dedicated command for model management
-- ✅ `llamaball models <name>` - Show specific model details
-- ✅ `llamaball models --format json|plain` - Different output formats
-- ✅ `llamaball chat --list-models` - List models from chat command
-- ✅ `llamaball chat -c <model>` - Specify chat model directly
-- ✅ `llamaball chat --temperature <0.0-2.0>` - Set temperature from CLI
-- ✅ `llamaball chat --max-tokens <1-8192>` - Set max tokens from CLI
-- ✅ `llamaball chat --top-p <0.0-1.0>` - Set nucleus sampling from CLI
-- ✅ `llamaball chat --top-k-sampling <int>` - Set top-K sampling from CLI
-- ✅ `llamaball chat --repeat-penalty <0.0-2.0>` - Set repeat penalty from CLI
+### CLI Enhancements (The Command Line Love)
+- ✅ `llamaline models` - Dedicated model management command
+- ✅ `llamaline models <n>` - Show specific model details
+- ✅ `llamaline models --format json|plain` - Different output formats
+- ✅ `llamaline chat --list-models` - List models from chat command
+- ✅ `llamaline chat -c <model>` - Specify chat model directly
+- ✅ `llamaline chat --temperature <0.0-2.0>` - Set temperature from CLI
+- ✅ `llamaline chat --max-tokens <1-8192>` - Set max tokens from CLI
+- ✅ Various parameter flags for direct CLI control
 
-### Verified Functionality
-- ✅ `llamaball --help` - Main CLI help and welcome screen
-- ✅ `llamaball version` - Version information display
-- ✅ `llamaball stats` - Database statistics with proper formatting
-- ✅ `llamaball ingest test/ --exclude "*.tmp,*.log"` - File ingestion with patterns
-- ✅ `llamaball chat --debug` - Interactive chat with context retrieval
-- ✅ Package imports: `import llamaball` works correctly
-- ✅ Module execution: Both `python -m llamaball` and `llamaball` work
-- ✅ **Dynamic Model Control** - Change models and parameters during chat
-- ✅ **Model Listing** - View all available models with size/parameter info  
-- ✅ **Parameter Tuning** - Real-time adjustment of generation parameters
-- ✅ **CLI Model Control** - Set models and parameters directly from command line
-- ✅ **Dedicated Models Command** - `llamaball models` for model management
-- ✅ **CLI Parameter Override** - `--temperature 0.1 --max-tokens 200` work correctly
-- ✅ **Model Details Display** - `llamaball models <name>` shows specific model info
-- ✅ **Format Options** - `--format json|plain|table` output variants
-- ✅ **List Models Integration** - `llamaball chat --list-models` displays and exits
-- ✅ **Interactive Status** - `/status` command shows all current configuration
+## 🚧 What's Still on the TODO List
 
-## 🚧 Outstanding Tasks
-
-### High Priority (Package Distribution)
-- [x] **Modern Packaging**: pyproject.toml and hatchling setup ✅
-- [x] **Repository Organization**: Clean file structure ✅
-- [x] **Documentation**: README, LICENSE, CHANGELOG ✅
-- [ ] **PyPI Publication**: Upload to PyPI for public distribution
+### High Priority (The Must-Haves)
+- [ ] **PyPI Publication**: Get this baby onto PyPI for easy installation
 - [ ] **CI/CD Pipeline**: GitHub Actions for automated testing and publishing
-- [ ] **Documentation Site**: MkDocs or Sphinx documentation hosting
+- [ ] **Documentation Site**: Proper docs hosting (MkDocs or Sphinx)
+- [ ] **Package Name Fix**: Update any remaining references from llamaball to llamaline
 
-### Medium Priority (Feature Development)
+### Medium Priority (The Should-Haves)
 - [ ] **Testing Suite**: Comprehensive unit and integration tests
-- [ ] **Performance Optimization**: Batch processing and caching
+- [ ] **Performance Tuning**: Batch processing and intelligent caching
 - [ ] **Advanced Search**: Filtering, faceted search, metadata queries
 - [ ] **Export Features**: Save conversations, export search results
 
-### Low Priority (Enhancement)
+### Low Priority (The Nice-to-Haves)
 - [ ] **Plugin System**: Extensible file type support
-- [ ] **Web Interface**: Optional web UI for non-CLI users
-- [ ] **Advanced Analytics**: Usage metrics and search patterns
-- [ ] **Cloud Sync**: Optional backup/sync capabilities
+- [ ] **Web Interface**: Optional web UI for GUI lovers
+- [ ] **Analytics**: Usage metrics and search patterns (local only!)
+- [ ] **Cloud Sync**: Optional backup/sync capabilities (with explicit consent)
 
-### Technical Improvements
+### Technical Improvements (The Under-the-Hood Stuff)
 - [ ] **Configuration Management**: Centralized config system
-- [ ] **Logging Improvements**: Structured logging with levels
-- [ ] **Memory Optimization**: Efficient embedding storage and retrieval
-- [ ] **Error Recovery**: Enhanced graceful failure handling
+- [ ] **Logging Improvements**: Structured logging with proper levels
+- [ ] **Memory Optimization**: More efficient embedding storage and retrieval
+- [ ] **Error Recovery**: Even better graceful failure handling
 
-## 🔧 Current Configuration
+## 🔧 Current Configuration (The Settings)
 
-### Default Settings
-- **Database**: `.clai.db` (SQLite)
+### Default Settings (What You Get Out of the Box)
+- **Database**: `.clai.db` (SQLite file in your working directory)
 - **Embedding Model**: `nomic-embed-text:latest`
-- **Chat Model**: `llama3.2:1b` (env: CHAT_MODEL)
-- **Provider**: `ollama` (local inference)
-- **Top-K Retrieval**: 3 documents
+- **Chat Model**: `llama3.2:1b` (configurable via CHAT_MODEL env var)
+- **Provider**: `ollama` (local inference only)
+- **Top-K Retrieval**: 3 documents per query
 - **Max Tokens**: 8191 per chunk
 
-### Environment Variables
-- `CHAT_MODEL`: Default chat model
-- `OLLAMA_ENDPOINT`: Ollama server URL
-- `LLAMABALL_DB`: Default database path
-- `LLAMABALL_LOG_LEVEL`: Logging verbosity
+### Environment Variables (The Tweakable Bits)
+- `CHAT_MODEL`: Your preferred chat model
+- `OLLAMA_ENDPOINT`: Where Ollama lives (default: http://localhost:11434)
+- `LLAMALINE_DB`: Database file location
+- `LLAMALINE_LOG_LEVEL`: How chatty the logs should be
 
-## 📋 Installation Requirements
+## 📋 What You Need to Run This Thing
 
-### Dependencies
-- **Python**: 3.8+ (development tested on 3.11)
+### Dependencies (The Required Stuff)
+- **Python**: 3.8+ (we've tested on 3.11)
 - **Core Packages**: typer[all], rich, ollama, numpy, tiktoken
 - **UI Packages**: prompt_toolkit, markdown-it-py
 - **External**: Ollama server for model inference
 
-### System Requirements
-- **Memory**: 4GB minimum, 8GB+ recommended
+### System Requirements (The Hardware Stuff)
+- **Memory**: 4GB minimum, 8GB+ recommended for larger models
 - **Storage**: 2GB for package + models (varies by model size)
-- **OS**: macOS, Linux, Windows (with WSL)
+- **OS**: macOS, Linux, Windows (with WSL for best experience)
 
-## 🎨 Design Principles
+## 🎨 Design Principles (Our North Star)
 
-### Accessibility First
-1. **Screen Reader Compatibility**: All output uses semantic markup
-2. **Keyboard Navigation**: No mouse-dependent features
+### Accessibility First (Non-Negotiable)
+1. **Screen Reader Friendship**: Semantic markup everywhere
+2. **Keyboard Mastery**: No mouse required for any feature
 3. **Clear Information Architecture**: Consistent command structure
-4. **Descriptive Feedback**: Rich error messages and help text
+4. **Helpful Feedback**: Error messages that actually help solve problems
 
-### Local Privacy
-1. **No External Calls**: All processing happens locally
-2. **Data Sovereignty**: User controls all data and models
-3. **Transparent Processing**: Clear indication of what data is used
-4. **Secure by Default**: No telemetry or usage tracking
+### Local Privacy (Our Promise)
+1. **No Phone Home**: All processing happens on your machine
+2. **Data Sovereignty**: You own and control all your data
+3. **Transparent Processing**: Clear indication of what data gets used
+4. **Secure by Default**: No telemetry, no usage tracking, no surprise data collection
 
-### Developer Experience
-1. **Self-Documenting**: Code includes purpose and I/O in comments
-2. **Type Safety**: Full type hints for IDE support
-3. **Consistent API**: Predictable function signatures and returns
-4. **Extensible Design**: Plugin-friendly architecture
+### Developer Experience (Because We Care)
+1. **Self-Documenting**: Code includes purpose and I/O in file headers
+2. **Type Safety**: Full type hints for excellent IDE support
+3. **Consistent API**: Predictable function signatures and return values
+4. **Extensible Design**: Architecture that welcomes plugins and extensions
 
-## 🧪 Testing Strategy
+## 🧪 Testing Strategy (Quality Assurance)
 
-### Unit Tests (TODO)
-- Core functionality: embedding, search, chat
+### Unit Tests (The Foundation) - TODO
+- Core functionality: embedding generation, search, chat
 - CLI command parsing and validation
-- Database operations and migrations
-- Error handling and edge cases
+- Database operations and data integrity
+- Error handling and edge case management
 
-### Integration Tests (TODO)
+### Integration Tests (The Real World) - TODO
 - End-to-end ingestion workflows
-- Chat session management
-- Multi-model compatibility
-- Performance benchmarks
+- Chat session management and persistence
+- Multi-model compatibility testing
+- Performance benchmarks and load testing
 
-### Accessibility Tests (TODO)
+### Accessibility Tests (The Important Stuff) - TODO
 - Screen reader compatibility verification
 - Keyboard navigation testing
 - Color contrast validation
 - Text-to-speech friendliness
 
-## 📈 Success Metrics
+## 📈 How We Measure Success
 
-### Technical Metrics
-- **Ingestion Speed**: Documents per second processed
+### Technical Metrics (The Numbers)
+- **Ingestion Speed**: Documents processed per second
 - **Search Accuracy**: Relevant results in top-K retrievals
-- **Response Time**: Chat latency and throughput
+- **Response Time**: Chat latency and overall throughput
 - **Memory Efficiency**: RAM usage during operations
 
-### User Experience Metrics
+### User Experience Metrics (The Human Stuff)
 - **Accessibility Score**: Screen reader compatibility rating
-- **Documentation Coverage**: Help completeness and clarity
-- **Error Recovery**: Graceful failure handling
+- **Documentation Quality**: Help completeness and clarity
+- **Error Recovery**: Graceful failure handling effectiveness
 - **Setup Time**: Time from install to first successful chat
 
-### Adoption Metrics
+### Adoption Metrics (The Community)
 - **Package Downloads**: PyPI installation statistics
 - **Community Feedback**: GitHub issues and feature requests
-- **Documentation Usage**: README and help command access
-- **Integration Examples**: Third-party usage patterns
+- **Documentation Usage**: README and help command access patterns
+- **Integration Examples**: Third-party usage and extensions
 
-## 🔄 Release Planning
+## 🔄 Release Planning (The Roadmap)
 
-### v0.1.0 (Package Distribution Ready)
-- ✅ Core package functionality
-- ✅ Rich CLI interface  
-- ✅ Dynamic model control
+### v0.1.0 (Package Distribution Ready) - CURRENT
+- ✅ Core package functionality working
+- ✅ Rich CLI interface with accessibility features
+- ✅ Dynamic model control and parameter adjustment
 - ✅ Modern packaging (pyproject.toml)
-- ✅ Repository organization
+- ✅ Clean repository organization
 - ✅ Comprehensive documentation
-- ✅ Accessibility features
 - [ ] PyPI publication
 
-### v0.1.1 (Bug Fixes & Polish)
-- [ ] CI/CD pipeline
+### v0.1.1 (Polish & Distribution) - NEXT
+- [ ] CI/CD pipeline setup
 - [ ] Test coverage improvements
-- [ ] Documentation site
+- [ ] Documentation site deployment
 - [ ] Performance optimizations
+- [ ] Bug fixes from initial feedback
 
-### v0.2.0 (Feature Expansion)
+### v0.2.0 (Feature Expansion) - FUTURE
 - [ ] Advanced search capabilities
-- [ ] Export functionality
+- [ ] Export and import functionality
 - [ ] Plugin architecture foundation
-- [ ] Enhanced error handling
+- [ ] Enhanced error handling and recovery
 
-### v1.0.0 (Production Ready)
+### v1.0.0 (Production Ready) - LONG TERM
 - [ ] Comprehensive testing coverage
 - [ ] Full accessibility certification
 - [ ] Performance benchmarking
 - [ ] Enterprise-ready features
 
-## 🤝 Contributing Guidelines
+## 🤝 Contributing Guidelines (Join the Fun)
 
-### Code Standards
-1. **Accessibility**: All features must support screen readers
-2. **Documentation**: Every function needs docstrings and type hints
-3. **Testing**: New features require corresponding tests
+### Code Standards (The Rules)
+1. **Accessibility**: If it doesn't work with a screen reader, it doesn't ship
+2. **Documentation**: Every function needs docstrings, type hints, and purpose comments
+3. **Testing**: New features require corresponding tests (no exceptions)
 4. **Consistency**: Follow established patterns and conventions
 
-### Review Process
+### Review Process (Quality Control)
 1. **Technical Review**: Code quality and architecture assessment
 2. **Accessibility Review**: Screen reader and keyboard testing
 3. **Documentation Review**: Help text and README updates
 4. **Performance Review**: Memory and speed impact evaluation
 
+## 📜 Legal and Attribution
+
+**MIT License** by Luke Steuber  
+- Website: lukesteuber.com, assisted.site  
+- Email: luke@lukesteuber.com  
+- Bluesky: @lukesteuber.com  
+- LinkedIn: https://www.linkedin.com/in/lukesteuber/  
+- GitHub: lukeslp  
+
+### Support the Project
+- 💰 [Tip jar](https://usefulai.lemonsqueezy.com/buy/bf6ce1bd-85f5-4a09-ba10-191a670f74af) - Coffee fuel for late-night coding  
+- 📖 [Substack](https://lukesteuber.substack.com/) - Project updates and insights  
+
 ---
 
-**🎯 Mission**: Build the most accessible, privacy-focused document chat system available, empowering users with local AI while maintaining the highest standards of usability and technical excellence. 
+**🎯 Mission**: Build the most accessible, privacy-focused document chat system that doesn't make you want to throw your computer out the window. We're proving that local AI can be both powerful and actually usable by everyone.
+
+**🌟 Vision**: A world where talking to your documents is as natural as talking to a friend, where privacy is protected by default, and where accessibility isn't an afterthought but a core feature.
+
+*Built with ❤️ by humans who believe technology should serve people, not the other way around.* 

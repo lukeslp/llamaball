@@ -1,262 +1,267 @@
-# 🦙 Llamaball
+# 🦙 Llamaline
 
-**Accessible document chat and RAG system powered by Ollama**
+**Your friendly neighborhood accessible document chat companion - because talking to your files should be as easy as talking to your best friend!**
 
-[![PyPI version](https://badge.fury.io/py/llamaball.svg)](https://badge.fury.io/py/llamaball)
+[![PyPI version](https://badge.fury.io/py/llamaline.svg)](https://badge.fury.io/py/llamaline)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A comprehensive toolkit for document ingestion, embedding generation, and conversational AI interactions with your local documents. Built with accessibility and local privacy as core principles.
+*A delightfully accessible toolkit for chatting with your documents, powered by local AI and built with love for everyone who believes privacy and usability should go hand in hand.*
 
-## ✨ Features
+## 🌟 What Makes Llamaline Special?
 
-- **🏠 100% Local Processing**: All data stays on your machine
-- **♿ Accessibility First**: Screen reader support, keyboard navigation, clear structure
-- **🖥️ Rich CLI**: Beautiful terminal interface with progress indicators
-- **📚 Smart Document Parsing**: Intelligent chunking for optimal embeddings
-- **🔍 Semantic Search**: Fast vector similarity search
-- **💬 Interactive Chat**: Natural conversations with your documents
-- **📊 Database Management**: Comprehensive statistics and file management
-- **🎛️ Dynamic Model Control**: Change models and parameters during chat
-- **🔧 Developer-Friendly**: Full Python API with type hints
+Llamaline isn't just another document chat tool - it's your personal AI librarian that actually cares about accessibility! Built from the ground up to work beautifully with screen readers, keyboard navigation, and a terminal interface that doesn't make you want to pull your hair out.
 
-## 🚀 Quick Start
+### ✨ The Good Stuff
 
-### Installation
+- **🏠 Everything Stays Home**: Your documents never leave your machine. We're not interested in your data, promise!
+- **♿ Accessibility Champion**: Screen readers welcome! Keyboard warriors rejoice! We actually tested this stuff.
+- **🖥️ Terminal That Doesn't Suck**: Beautiful CLI that gives you real-time feedback without the bloat
+- **📚 Smart Document Whisperer**: Knows how to break up your docs into chunks that actually make sense
+- **🔍 Find Stuff Fast**: Vector search that gets you the right answers, not just random matches
+- **💬 Chat Like a Human**: Natural conversations with your documents - no robot speak required
+- **📊 Know Your Data**: See what's in your database without squinting at raw SQL
+- **🎛️ Change Your Mind**: Switch models and tweak settings mid-conversation like the indecisive genius you are
+- **🔧 Developer Happy**: Full Python API with type hints because we respect your IDE
 
-```bash
-# Install from PyPI
-pip install llamaball
+## 🚀 Getting Started (The Actually Easy Way)
 
-# Or install with development dependencies
-pip install llamaball[dev]
-```
+### Prerequisites - The Boring But Necessary Stuff
 
-### Prerequisites
+You'll need [Ollama](https://ollama.ai/) running on your machine. Don't worry, it's easier than assembling IKEA furniture:
 
-Llamaball requires [Ollama](https://ollama.ai/) to be installed and running:
-
-1. Install Ollama from [ollama.ai](https://ollama.ai/)
-2. Pull some models:
+1. Grab Ollama from [ollama.ai](https://ollama.ai/)
+2. Pull some models (these are good starting points):
    ```bash
-   ollama pull llama3.2:1b
-   ollama pull nomic-embed-text
+   ollama pull llama3.2:1b        # Fast and nimble
+   ollama pull nomic-embed-text   # The embedding wizard
    ```
 
-### Basic Usage
+### Installation - One Command and You're Done
 
 ```bash
-# Ingest documents from current directory
-llamaball ingest .
+# The standard way
+pip install llamaline
 
-# Start interactive chat
-llamaball chat
-
-# View statistics
-llamaball stats
-
-# List all files in database
-llamaball list
-
-# Get help
-llamaball --help
+# If you want to tinker under the hood
+pip install llamaline[dev]
 ```
 
-## 📋 CLI Commands
-
-### Document Management
+### First Steps - Let's Make Some Magic
 
 ```bash
-# Ingest files with options
-llamaball ingest ./docs --recursive --exclude "*.tmp,*.log"
+# Teach llamaline about your documents
+llamaline ingest .
 
-# Force re-indexing
-llamaball ingest ./docs --force
+# Start chatting with your files
+llamaline chat
 
-# View database statistics
-llamaball stats --format table
+# See what you've got
+llamaline stats
 
-# List files with search
-llamaball list --search "python" --sort-by size
+# Need help? We've got you covered
+llamaline --help
 ```
 
-### Interactive Chat
+## 🎮 Command Central
+
+### Document Wrangling
 
 ```bash
-# Start chat with specific model
-llamaball chat --model llama3.2:3b
+# Ingest everything in a folder (with style)
+llamaline ingest ./docs --recursive --exclude "*.tmp,*.log"
 
-# Set parameters from CLI
-llamaball chat --temperature 0.1 --max-tokens 200
+# Force rebuild everything (when you're feeling destructive)
+llamaline ingest ./docs --force
 
-# Enable debug mode
-llamaball chat --debug
+# See what you've accomplished
+llamaline stats --format table
+
+# Find specific files
+llamaline list --search "python" --sort-by size
+```
+
+### Chat Time
+
+```bash
+# Start with your favorite model
+llamaline chat --model llama3.2:3b
+
+# Be specific about what you want
+llamaline chat --temperature 0.1 --max-tokens 200
+
+# Debug mode (for when things get weird)
+llamaline chat --debug
 ```
 
 ### Model Management
 
 ```bash
-# List available models
-llamaball models
+# See what models you've got
+llamaline models
 
-# Show specific model details
-llamaball models llama3.2:1b
+# Get the details on a specific model
+llamaline models llama3.2:1b
 
-# List models in JSON format
-llamaball models --format json
+# JSON output (because sometimes you need data, not pretty tables)
+llamaline models --format json
 ```
 
-## 💬 Interactive Chat Commands
+## 🗣️ Chat Commands That Actually Make Sense
 
-Once in chat mode, use these commands:
+Once you're in chat mode, these commands are your new best friends:
 
-- `/models` - List all available Ollama models
-- `/model <name>` - Switch to a different chat model
-- `/temp <0.0-2.0>` - Adjust response creativity
-- `/tokens <1-8192>` - Change maximum response length
-- `/topk <1-20>` - Modify document retrieval count
-- `/status` - Display current configuration
-- `/help` - Show all chat commands
-- `/exit` - Exit chat mode
+- `/models` - Show me what I can play with
+- `/model <name>` - Switch to a different brain
+- `/temp <0.0-2.0>` - Make it more creative (or less crazy)
+- `/tokens <1-8192>` - How much can it say at once?
+- `/topk <1-20>` - How many documents should it consider?
+- `/status` - What's happening right now?
+- `/help` - I forgot what I'm doing
+- `/exit` - Time to touch grass
 
-## 🐍 Python API
+## 🐍 Python API (For the Code-Inclined)
 
 ```python
-from llamaball import core
+from llamaline import core
 
-# Ingest documents
+# Feed it your documents
 core.ingest_files("./docs", recursive=True, exclude_patterns=["*.tmp"])
 
-# Search embeddings  
-results = core.search_embeddings(query="search term", top_k=5)
+# Find relevant stuff  
+results = core.search_embeddings(query="what is this about?", top_k=5)
 
-# Chat with documents
+# Have a conversation
 response = core.chat(
-    user_input="What is this about?", 
+    user_input="Explain this like I'm 5", 
     history=[],
     model="llama3.2:1b"
 )
 
-# Get database statistics
+# Get the stats (knowledge is power)
 stats = core.get_stats()
-print(f"Total documents: {stats['total_files']}")
+print(f"You've got {stats['total_files']} files indexed!")
 ```
 
-## ⚙️ Configuration
+## ⚙️ Configuration (Make It Yours)
 
-### Environment Variables
+### Environment Variables (The Tweakable Bits)
 
-- `CHAT_MODEL`: Default chat model (default: `llama3.2:1b`)
-- `OLLAMA_ENDPOINT`: Ollama server endpoint (default: `http://localhost:11434`)
-- `LLAMABALL_DB`: Database path (default: `.clai.db`)
-- `LLAMABALL_LOG_LEVEL`: Logging level (default: `INFO`)
+- `CHAT_MODEL`: Your go-to chat model (default: `llama3.2:1b`)
+- `OLLAMA_ENDPOINT`: Where Ollama lives (default: `http://localhost:11434`)
+- `LLAMALINE_DB`: Where to keep your database (default: `.clai.db`)
+- `LLAMALINE_LOG_LEVEL`: How chatty should the logs be? (default: `INFO`)
 
-### Supported File Types
+### File Types We're Friends With
 
-- **Text**: `.txt`, `.md`, `.rst`
-- **Code**: `.py`, `.js`, `.html`, `.css`, `.json`
-- **Data**: `.csv`, `.tsv`
-- **Documents**: `.pdf` (planned)
+- **Text Files**: `.txt`, `.md`, `.rst` - the classics
+- **Code**: `.py`, `.js`, `.html`, `.css`, `.json` - we speak developer
+- **Data**: `.csv`, `.tsv` - spreadsheet refugees welcome
+- **Documents**: `.pdf` - coming soon to a release near you!
 
-## ♿ Accessibility Features
+## ♿ Accessibility - We Actually Mean It
 
-- **Screen Reader Support**: Semantic markup and clear structure
-- **Keyboard Navigation**: Full CLI functionality via keyboard
-- **High Contrast Output**: Rich terminal formatting with good contrast
-- **Clear Error Messages**: Descriptive feedback with suggested solutions
-- **Progress Indicators**: Real-time feedback during operations
-- **Consistent Layout**: Predictable command structure
+- **Screen Reader BFFs**: Proper semantic markup throughout
+- **Keyboard Masters**: Everything works without touching a mouse
+- **High Contrast**: Terminal output that doesn't hurt your eyes
+- **Clear Communication**: Error messages that actually help
+- **Progress Updates**: Know what's happening in real-time
+- **Consistent Patterns**: Learn once, use everywhere
 
-## 🧪 Development
+## 🛠️ For the Tinkerers
 
-### Setup
+### Development Setup
 
 ```bash
-# Clone repository
-git clone https://github.com/lsteuber/llamaball.git
-cd llamaball
+# Get the source
+git clone https://github.com/lukeslp/llamaline.git
+cd llamaline
 
-# Install in development mode
+# Install for hacking
 pip install -e .[dev]
 
-# Install pre-commit hooks
+# Set up the pre-commit hooks
 pre-commit install
 ```
 
-### Testing
+### Testing (Because Breaking Things Is Fun)
 
 ```bash
-# Run tests
+# Run the tests
 pytest
 
-# Run with coverage
-pytest --cov=llamaball --cov-report=html
+# See how much you've covered
+pytest --cov=llamaline --cov-report=html
 
-# Type checking
-mypy llamaball/
+# Check your types
+mypy llamaline/
 
-# Code formatting
-black llamaball/
-isort llamaball/
+# Make it pretty
+black llamaline/
+isort llamaline/
 ```
 
-### Building
-
-```bash
-# Build package
-python -m build
-
-# Upload to PyPI (maintainers only)
-python -m twine upload dist/*
-```
-
-## 📁 Project Structure
+## 📁 What's In The Box
 
 ```
-llamaball/
-├── llamaball/              # Main package
-│   ├── __init__.py         # Package initialization
-│   ├── cli.py              # CLI interface  
-│   ├── core.py             # Core RAG functionality
-│   ├── utils.py            # Utilities and helpers
-│   └── __main__.py         # Module execution support
+doc_chat_ai/
+├── llamaline/              # The main package
+│   ├── __init__.py         # Package setup and public API
+│   ├── cli.py              # Command-line interface magic
+│   ├── core.py             # The RAG engine that makes it all work
+│   ├── utils.py            # Helper functions and utilities
+│   └── __main__.py         # Makes `python -m llamaline` work
 ├── models/                 # Ollama model configurations
-│   ├── Modelfile.gemma3:1b
-│   ├── Modelfile.qwen3:*   # Various Qwen3 configurations
-│   └── README_LLAMAFILE_RAG.md
-├── tests/                  # Test suite
-├── docs/                   # Documentation (planned)
+├── tests/                  # Test suite (because bugs are not features)
+├── archive/                # Old stuff we can't bear to delete
 ├── pyproject.toml          # Modern Python packaging
-├── CHANGELOG.md            # Version history
-└── README.md               # This file
+├── CHANGELOG.md            # What changed and when
+├── README.md               # You are here!
+└── PROJECT_PLAN.md         # The master plan
 ```
 
-## 🔒 Privacy & Security
+## 🔒 Privacy & Security (The Important Stuff)
 
-- **Local First**: All processing happens on your machine
-- **No Telemetry**: No usage data or analytics collected
-- **Data Sovereignty**: You control all data and models
-- **Transparent**: Open source with clear data handling
+- **Local First**: Your data never calls home
+- **No Snooping**: We don't collect usage data because that's creepy
+- **You're In Control**: Your machine, your models, your data
+- **Transparent**: Open source means no hidden surprises
 
-## 🤝 Contributing
+## 🤝 Want to Help Out?
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+We love contributors! Check out [CONTRIBUTING.md](CONTRIBUTING.md) for the details, but here are the highlights:
 
-1. **Accessibility**: All features must support screen readers
-2. **Documentation**: Comprehensive docstrings and type hints
-3. **Testing**: New features require corresponding tests
-4. **Consistency**: Follow established patterns and conventions
+1. **Accessibility Matters**: If it doesn't work with a screen reader, it doesn't ship
+2. **Document Everything**: Future you will thank present you
+3. **Test Your Stuff**: New features need tests (your future debugger will thank you)
+4. **Keep It Consistent**: Follow the patterns we've established
 
-## 📝 License
+## 📜 The Legal Bits
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT License by Luke Steuber (lukesteuber.com, assisted.site)
+- Email: luke@lukesteuber.com
+- Bluesky: @lukesteuber.com
+- LinkedIn: https://www.linkedin.com/in/lukesteuber/
+- GitHub: lukeslp
 
-## 🙏 Acknowledgments
+See [LICENSE](LICENSE) for the full legal text.
 
-- Built on [Ollama](https://ollama.ai/) for local AI inference
-- Powered by [Typer](https://typer.tiangolo.com/) and [Rich](https://rich.readthedocs.io/) for CLI
-- Inspired by accessibility-first design principles
+## 🙏 Props and Thanks
+
+- Built on [Ollama](https://ollama.ai/) for keeping AI local and awesome
+- Powered by [Typer](https://typer.tiangolo.com/) and [Rich](https://rich.readthedocs.io/) for CLI excellence
+- Inspired by the belief that accessible software is better software
+
+## 💡 Support the Project
+
+Love what we're building? Consider:
+- 🌟 Starring the repo
+- 🐛 Reporting bugs (they're free!)
+- 💰 [Tip jar](https://usefulai.lemonsqueezy.com/buy/bf6ce1bd-85f5-4a09-ba10-191a670f74af) for coffee fuel
+- 📖 [Substack](https://lukesteuber.substack.com/) for project updates
 
 ---
 
-**🎯 Mission**: Build the most accessible, privacy-focused document chat system available, empowering users with local AI while maintaining the highest standards of usability and technical excellence.
+**🎯 Mission**: Build the most accessible, privacy-focused document chat system that doesn't make you want to throw your computer out the window. We're here to prove that local AI can be both powerful and actually usable by everyone.
+
+*Built with ❤️ by humans who believe technology should serve people, not the other way around.*
