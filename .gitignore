@@ -2,10 +2,32 @@
 __pycache__/
 *.py[cod]
 *$py.class
+DS_Store
 
 # C extensions
 *.so
 
+# Ignore common document, spreadsheet, presentation, and image file types
+# (De-duplicated and alphabetized for clarity)
+
+# Image files
+*.bmp
+*.gif
+*.ico
+*.jpeg
+*.jpg
+*.png
+*.tiff
+
+# Document files
+*.csv
+*.docx
+*.pdf
+*.ppt
+*.pptx
+*.tsv
+*.xls
+*.xlsx
 # Distribution / packaging
 .Python
 build/
@@ -176,7 +198,7 @@ ehthumbs.db
 Desktop.ini
 
 # llamaball specific
-.clai.db
+.llamaball.db
 *.db
 archive/
 logs/

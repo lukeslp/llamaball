@@ -1,5 +1,9 @@
 # Comprehensive Llamafile Setup for Vector Database RAG Applications
 
+**Created by Luke Steuber** - [lukesteuber.com](https://lukesteuber.com) | [assisted.site](https://assisted.site)
+
+MIT License - Copyright (c) 2025 Luke Steuber
+
 This guide provides optimal llamafile configurations for building local RAG (Retrieval Augmented Generation) systems similar to your `doc_chat_ollama.py` implementation.
 
 ## Architecture Overview
@@ -427,4 +431,22 @@ fi
 6. **Implement proper error handling** and fallback mechanisms
 7. **Cache frequently used embeddings** to improve performance
 
-This setup provides a production-ready, scalable RAG system using llamafiles that can handle document ingestion, vector search, and conversational AI locally without external dependencies. 
+This setup provides a production-ready, scalable RAG system using llamafiles that can handle document ingestion, vector search, and conversational AI locally without external dependencies.
+
+---
+
+## Attribution & Support
+
+**Created by Luke Steuber**
+- **Website**: [lukesteuber.com](https://lukesteuber.com)
+- **Professional**: [assisted.site](https://assisted.site)
+- **Contact**: luke@lukesteuber.com
+- **Social**: [@lukesteuber.com](https://bsky.app/profile/lukesteuber.com) on Bluesky
+- **LinkedIn**: [LinkedIn Profile](https://www.linkedin.com/in/lukesteuber/)
+- **Support**: [Tip Jar](https://usefulai.lemonsqueezy.com/buy/bf6ce1bd-85f5-4a09-ba10-191a670f74af)
+- **Newsletter**: [lukesteuber.substack.com](https://lukesteuber.substack.com/)
+- **Code**: [GitHub @lukeslp](https://github.com/lukeslp)
+- **Models**: [Ollama coolhand](https://ollama.com/coolhand)
+- **Pip**: [lukesteuber](https://pypi.org/user/lukesteuber/)
+
+**MIT License** - see [LICENSE](../LICENSE) file for complete details. 
